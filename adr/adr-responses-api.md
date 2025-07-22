@@ -2,9 +2,7 @@
 
 **Date:** 2025-07-20
 
-**Status:** Proposed
-
-## 1. Context
+## Context
 
 Red Hat is developing an agentic capability for its AI platforms, including RHEL AI and Red Hat OpenShift AI (RHOAI). The core reasoning engine will leverage the Llama Stack. We are faced with a choice between two available APIs within Llama Stack for implementing agentic logic:
 
@@ -15,7 +13,7 @@ The strategic direction from the Llama Stack team is to prioritize the Responses
 
 The core architectural question is: How can we build a robust, developer-friendly agentic framework on a stateless API without sacrificing the usability that an explicit `Agent` construct provides?
 
-## 2. Decision
+## Decision
 
 We will adopt the **Llama Stack Responses API** as the exclusive backend interface for agentic reasoning within Red Hat's AI products.
 
@@ -33,7 +31,11 @@ To address the absence of a server-side agent object, we will **design and imple
 
 The decision of what form this client-side Agent construct will take will be addressed in a subsequent ADR. Some proposals include adding the functionality to the official Llama Stack client library, creating a new SDK maintained by Red Hat (perhaps as part of OpenDataHub), providing a container image with a simple HTTP API, and adopting a pre-existing SDK such as LangChain. That ADR will cover the pros and cons of these options and propose a final resolution.
 
-## 3. Consequences
+## Status
+
+Proposed
+
+## Consequences
 
 ### Positive
 
