@@ -1,6 +1,6 @@
-# ADR-001: Adopting the Llama Stack Responses API for Agentic MCP
+# ADR-001: Adopt Llama Stack Responses API for client-side Agent orchestration
 
-**Date:** 2025-07-22
+**Date:** 2025-07-20
 
 **Status:** Proposed
 
@@ -11,7 +11,7 @@ Red Hat is developing an agentic capability for its AI platforms, including RHEL
 1. **Llama Stack Agents API:** An older API that provides an explicit, stateful `Agent` construct on the server. The server manages the agent's state and conversation history within a `session`. While this simplifies state management for the client, this API is not aligned with the broader AI ecosystem's direction.
 2. **Llama Stack Responses API:** A newer, stateless API designed for compatibility with the OpenAI Responses API format. This API accepts a list of tools and a chat history and returns a model-generated response, which may include one or more tool calls. It does not provide a server-side `Agent` or `session` construct, requiring the client to manage the state of the interaction.
 
-The strategic direction from the Llama Stack team is to prioritize the Responses API to maximize compatibility with the vast ecosystem of tools, SDKs, and developer knowledge built around the OpenAI API standard. The older Agents API is expected to be deprecated, heavily refactored, or receive minimal future investment, posing a significant long-term risk.
+The strategic direction from the Llama Stack team is to prioritize the Responses API to maximize compatibility with the vast ecosystem of tools, SDKs, and developer knowledge built around the OpenAI API standard. The older Agents API could be deprecated, heavily refactored, or receive minimal future investment, posing a significant long-term risk.
 
 The core architectural question is: How can we build a robust, developer-friendly agentic framework on a stateless API without sacrificing the usability that an explicit `Agent` construct provides?
 
