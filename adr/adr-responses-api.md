@@ -1,4 +1,4 @@
-# ADR-001: Adopt Llama Stack Responses API for client-side Agent orchestration
+# ADR: Adopt Llama Stack Responses API for client-side Agent orchestration
 
 **Date:** 2025-07-20
 
