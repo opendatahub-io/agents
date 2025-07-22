@@ -1,10 +1,6 @@
 # ADR: Adopt a Minimal SDK and Ecosystem Strategy for Agents
 
-**Date:** 2025-07-22
-
-**Status:** Proposed
-
-## 1. Context
+## Context
 
 Following the decision in [ADR: Adopt Llama Stack Responses API for Agentic MCP](https://github.com/opendatahub-io/agents/pull/1) to adopt the Llama Stack Responses API, we committed to providing a client-side "Agent construct" to manage state and orchestrate the agentic loop. This ADR addresses the critical follow-up question: what specific form will this construct take?
 
@@ -20,7 +16,7 @@ We considered several options for implementing this agent construct:
 6. **New, Minimal Red Hat Container/Service:** Provide an ultra-lightweight container that exposes a simple HTTP API for agent interaction and recommend users graduate to more powerful frameworks for complex needs.
 7. **New, Minimal Red Hat SDK:** Provide an ultra-lightweight SDK designed for basic use cases and tutorials, while officially recommending that customers adopt comprehensive third-party frameworks for advanced applications.
 
-## 2. Decision
+## Decision
 
 We will adopt **Option 7**. We will create a **new, minimal, lightweight Red Hat Agent SDK** and concurrently establish a strategy to **officially recommend and ensure compatibility with established third-party frameworks**.
 
@@ -34,7 +30,11 @@ The key characteristics of the Red Hat Agent SDK will be:
 
 This two-pronged approach (a minimal "first-step" SDK and a clear "next-step" recommendation of powerful external tools) provides the best balance of speed, user choice, and focused engineering effort.
 
-## 3. Consequences
+## Status
+
+Proposed
+
+## Consequences
 
 ### Positive
 
