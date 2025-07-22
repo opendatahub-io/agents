@@ -1,7 +1,5 @@
 # ADR: Adopt Llama Stack Responses API for client-side Agent orchestration
 
-**Date:** 2025-07-20
-
 ## Context
 
 Red Hat is developing an agentic capability for its AI platforms, including RHEL AI and Red Hat OpenShift AI (RHOAI). The core reasoning engine will leverage the Llama Stack. We are faced with a choice between two available APIs within Llama Stack for implementing agentic logic:
