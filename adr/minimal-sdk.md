@@ -24,9 +24,9 @@ The new Red Hat Agent SDK will be written in **Python**. The specific list of th
 
 The key characteristics of the Red Hat Agent SDK will be:
 
-* **Minimalist Scope:** It will focus exclusively on implementing the core agent loop (state management, API calls, tool dispatching) as a reference. It is not intended to have complex features like chains, memory modules, or vector store integrations.
 * **Enablement, Not Competition:** Its primary purpose is to serve as a clear, simple "golden path" for new users, tutorials, documentation, and basic proof-of-concept applications.
-* **Reference Implementation:** It will act as the reference for how to correctly interact with the Llama Stack Responses API in an agentic fashion, providing a foundation that other tools can build upon or refer to.
+* **Minimalist Scope:** It will focus exclusively on implementing the core agent loop (state management, API calls, tool dispatching) as a reference. It is not intended to have complex features like chains, memory modules, or vector store integrations.  The details of the scope will be defined by the capabilities we want to introduce in our enablement and/or any automatic generation of agentic code that we do.
+* **Reference Implementation:** It will act as the reference for how to correctly interact with the Llama Stack Responses API in an agentic fashion, providing a foundation that other tools can build upon or refer to.  It may be useful as a reference for developers who want to build their own Agent abstraction for a single application.
 
 This two-pronged approach (a minimal "first-step" SDK and a clear "next-step" recommendation of powerful external tools) provides the best balance of speed, user choice, and focused engineering effort.
 
