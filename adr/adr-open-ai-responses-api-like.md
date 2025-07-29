@@ -23,7 +23,7 @@ There is a related precedent of the [`OpenAILike`](https://docs.llamaindex.ai/en
 
 ## Decision
 
-We will lay a foundation of an "OpenAI Responses API-like" user facing APIs which commits only to implementing some subset of the OpenAI Responses API.
+The initial Llama Stack Responses API design will target compatibility with the minimal subset of the OpenAI Responses API that clearly serves both consumer and enterprise users.
 
 ## Consequences
 
