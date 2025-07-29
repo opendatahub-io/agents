@@ -1,5 +1,8 @@
 # ADR: Risk-adjusted "Open AI Responses API-like" Foundation
 
+## Status
+
+Proposed
 
 ## Context
 
