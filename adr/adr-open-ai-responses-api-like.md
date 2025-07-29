@@ -7,11 +7,11 @@ There has been discussion about how to model our approach to agentic functionali
 
 ### OpenAI Responses API
 
-This provides an example of agentic-oriented workflows and API design. However, this is a consumer-facing API that exposes many details that might want to be carefully controlled in an enterprise environment. Examples include `parallel_tool_calls` for toggling parallelism of tool calling and `tool_choice` for controlling how tools are chosen whether to be used. Adopting this API wholesale is likely to be in tension with the needs of an enterprise deployment on top of OpenShift AI.
+This provides an example of agentic-oriented workflows and API design. However, this is a consumer-facing API that exposes many details that might want to be carefully controlled in an enterprise environment. Examples include `parallel_tool_calls` for toggling parallelism of tool calling and `tool_choice` for controlling how tools are chosen whether to be used. Adopting this API wholesale could be in tension with the needs of an enterprise deployment on top of OpenShift AI.
 
 Consider the perspective of a cluster operator who is deploying a model update. Monitoring, end user chat sessions, agentic state, workflow partial execution all need to persist while surrounding infrastructure is being updated. This suggests that there most likely needs to be an internally managed "agent" abstraction that can be managed by a platform operator. While surely this capability exists internally within OpenAI, it is not exposed in the consumer-facing Responses API and instead some set of runtime configuration parameters are. In an enterprise API approach, the needs are different, as are requirements around control of runtime configuration parameters.
 
-It is important to note that compatibility with existing, widely-adopted APIs such as this one would be a significant advantage for adoption. There is already [partial progress towards implementing part of this API](https://github.com/meta-llama/llama-stack/blob/870a37ff4bd5aad267952c70acf91113bd8c71b0/llama_stack/providers/inline/agents/meta_reference/openai_responses.py#L214).
+It is important to note that compatibility with existing, widely-adopted APIs such as this one would be a significant advantage for adoption. There is already [partial progress towards implementing part of this API](https://github.com/meta-llama/llama-stack/blob/870a37ff4bd5aad267952c70acf91113bd8c71b0/llama_stack/providers/inline/agents/meta_reference/openai_responses.py#L214). See also [Agents vs OpenAI Responses API](https://llama-stack.readthedocs.io/en/latest/building_applications/responses_vs_agents.html).
 
 ### Llama Stack Agents API
 
