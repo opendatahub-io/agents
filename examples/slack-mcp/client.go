@@ -5,27 +5,40 @@ import (
 	"log"
 	"os"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
-	"github.com/openai/openai-go/responses"
+	"github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2/option"
+	"github.com/openai/openai-go/v2/responses"
 )
 
 func main() {
-	model := "vllm/Qwen/Qwen3-0.6B"
+	log.Println("=== Testing Slack MCP integration with different models ===")
+
+	queryModel("OpenAI GPT-4o-mini", "openai/gpt-4o-mini")
+	log.Println() // Add spacing between outputs
+	queryModel("Qwen 3-0.6B", "vllm/Qwen/Qwen3-0.6B")
+}
+
+// queryModel sends a query to the specified model and prints the response with clear labeling
+func queryModel(displayName, modelName string) {
+	log.Printf("--- Querying %s (%s) ---", displayName, modelName)
+
 	token := os.Getenv("SLACK_MCP_TOKEN")
-	// Use OpenAI directly instead of Llama Stack
+	if token == "" {
+		log.Fatalf("SLACK_MCP_TOKEN environment variable is required")
+	}
+
 	client := openai.NewClient(
 		option.WithBaseURL("http://127.0.0.1:8321/v1/openai/v1/"),
 	)
 
 	ctx := context.TODO()
 	params := responses.ResponseNewParams{
-		Model: model,
+		Model: modelName,
 		Tools: []responses.ToolUnionParam{
 			{
 				OfMcp: &responses.ToolMcpParam{
 					ServerLabel: "slack",
-					ServerURL:   "http://127.0.0.1:13080/sse",
+					ServerURL:   openai.String("http://127.0.0.1:13080/sse"),
 					Headers: map[string]string{
 						"Authorization": "Bearer " + token,
 					},
@@ -36,9 +49,11 @@ func main() {
 			OfString: openai.String("Using the slack mcp tool provided, list all the channels you are in."),
 		},
 	}
+
 	resp, err := client.Responses.New(ctx, params)
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalf("Error querying %s: %v", displayName, err)
 	}
-	log.Println(resp.OutputText())
+
+	log.Printf("%s Response:\n%s", displayName, resp.OutputText())
 }
