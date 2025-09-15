@@ -1,0 +1,46 @@
+version: 2
+image_name: llamastack-crimson
+container_image: null
+apis:
+- inference
+- agents
+- safety
+- vector_io
+- tool_runtime
+providers:
+  inference:
+  - provider_id: vllm
+    provider_type: remote::vllm
+    config:
+      url: "http://0.0.0.0:8000/v1"
+    module: null
+  agents:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      persistence_store:
+        type: sqlite
+        connection_string: sqlite:///meta_reference.db
+      responses_store:
+        type: sqlite
+        connection_string: sqlite:///responses.db
+models:
+- model_id: Qwen/Qwen3-0.6B
+  model_type: llm
+  provider_id: vllm
+shields: []
+vector_dbs: []
+datasets: []
+scoring_fns: []
+benchmarks: []
+tool_groups: []
+logging: null
+server:
+  port: 8321
+  tls_certfile: null
+  tls_keyfile: null
+  tls_cafile: null
+  auth: null
+  host: null
+  quota: null
+  cors: null
