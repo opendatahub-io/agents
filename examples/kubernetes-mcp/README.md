@@ -13,6 +13,11 @@ It is fairly straightforward to get a container based kubernetes cluster deploye
 Those using Podman on MacOS can look at [this guide](https://github.com/southsidedean/deploy-kind-using-podman-macos) to have kind deployed on top of it.
 
 Once the cluster is deployed, apply the included `demo.yaml` file against the cluster.
+
+```shell
+kubectl apply -f demo.yaml
+```
+
 This will create the following resources:
 
 - A new namespace `demo-auth`
@@ -102,6 +107,8 @@ export the URL for your inference server (llama stack in this case):
 export OPENAI_BASE_URL=http://localhost:8321/v1/openai/v1
 ```
 
+### Go client
+
 Run Go mod tidy
 
 ```shell
@@ -112,6 +119,14 @@ Run the demo script
 
 ```shell
 go run client.go
+```
+
+### Python client
+
+Run the python script
+
+```shell
+python client.py
 ```
 
 ## Expected Output
