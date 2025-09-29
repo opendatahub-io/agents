@@ -29,8 +29,6 @@ class TroubleshootingCrew():
 
     @agent
     def developer(self) -> Agent:
-        print(f"mcp server tools: {self.get_mcp_tools()}")
-
         llm = LLM(
             model="openai/gpt-4",
         )
