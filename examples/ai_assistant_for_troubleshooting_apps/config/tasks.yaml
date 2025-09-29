@@ -1,0 +1,6 @@
+list_issues_task:
+  description: >
+    Use the github server tools to search and return open issues from the {repo} repository owned by {owner}.
+  expected_output: >
+    Display a markdown list of titles of the open issues in the {repo} repository owned by {owner}.
+  agent: developer
