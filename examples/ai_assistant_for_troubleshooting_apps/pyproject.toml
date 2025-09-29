@@ -1,0 +1,16 @@
+[project]
+name = "ai-assistant-for-troubleshooting-apps"
+version = "0.1.0"
+description = "AI assistant that helps troubleshoot Kuberenets clusters"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "crewai==0.193.2",
+    "crewai-tools[mcp]>=0.75.0",
+    "greenlet==3.2.4",
+    "llama-stack==0.2.22",
+    "mcp==1.14.1",
+    "ollama==0.5.4",
+    "openai==1.108.1",
+    "sqlalchemy==2.0.43",
+]
