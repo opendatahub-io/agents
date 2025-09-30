@@ -4,3 +4,31 @@ list_issues_task:
   expected_output: >
     Display a markdown list of titles of the open issues in the {repo} repository owned by {owner}.
   agent: developer
+
+create_branch_task:
+  description: >
+    Use the github server tools to create a new branch {branch} in the {repo} repository owned by {owner}.
+  expected_output: >
+    Display a successful message after creating the new branch in {repo} repository owned by {owner}.
+  agent: developer
+
+update_file_task:
+  description: >
+    Use the github server tools to create code changes in the {branch} branch in the {repo} repository owned by {owner}.
+    Follow these steps:
+    1. Update the 'multi-resource-spec.yaml' file and set the container image tag for 'pod-reader-test' pod to latest.
+    2. Your commit message should summarize the changes you have made.
+    3. Push the {branch} branch along with the new commits to the upstream {repo} repository owned by {owner}.
+  expected_output: >
+    Display a successful message after updating files in the {branch} branch in {repo} repository owned by {owner}.
+  agent: developer
+
+create_pull_request_task:
+  description: >
+    Use the github server tools to create a pull request in the {repo} repository owned by {owner}.
+    Follow these steps:
+    1. Create a new pull request from this new branch to the main branch.
+    2. Add a description that clearly specifies the changes.
+  expected_output: >
+    Display a successful message after creating a pull request in {repo} repository owned by {owner}.
+  agent: developer
