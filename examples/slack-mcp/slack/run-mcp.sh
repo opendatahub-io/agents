@@ -16,6 +16,7 @@ podman run -d \
     -e SLACK_MCP_XOXP_TOKEN="${SLACK_MCP_TOKEN}" \
     -e SLACK_MCP_LOG_LEVEL=debug \
     -e SLACK_MCP_HOST=0.0.0.0 \
+    -e SLACK_MCP_ADD_MESSAGE_TOOL=true \
     -p 13080:13080 \
     ghcr.io/korotovsky/slack-mcp-server:latest \
     mcp-server --transport sse
