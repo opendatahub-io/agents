@@ -9,6 +9,20 @@ from typing import List, Union
 
 @CrewBase
 class TroubleshootingCrew():
+    """
+    A multi-system agent that can monitor a Kubernetes cluster and help troubleshoot problems.
+
+    The crew comprises of three agents:
+    1. Platform agent: monitors a cluster and provides remediation steps
+    2. Notifier agent: sends updates via Slack
+    3. Developer agent: creates changes in resource definitions, as needed, and pushes to GitHub
+
+    The crew will execute in a sequential manner in the first iteration -- subsequent iterations will
+    introduce a hierarchical process.
+
+    Finally, the agent and task definitions are stored under the config folder.
+    """
+
     agents: List[BaseAgent]
     tasks: List[Task]
 

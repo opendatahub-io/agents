@@ -1,3 +1,20 @@
+"""
+A user can execute the troubleshooting crew locally. The crew monitors and updates
+a Kubernetes cluster resources in a sequential manner.
+
+Usage:
+    uv run python main.py
+
+Pre-requisites:
+    # GitHub repo information and user credentials
+    - REPO_NAME
+    - OWNER
+    - GITHUB_TOKEN
+
+    # OpenAI API key to use gpt-4 model
+    - OPENAI_API_KEY
+"""
+
 import os
 
 from crew import TroubleshootingCrew
