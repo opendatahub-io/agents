@@ -27,7 +27,7 @@ create_pull_request_task:
   description: >
     Use the github server tools to create a pull request in the {repo} repository owned by {owner}.
     Follow these steps:
-    1. Create a new pull request from this new branch to the main branch.
+    1. Create a new pull request from the {branch} branch to the main branch.
     2. Add a description that clearly specifies the changes.
   expected_output: >
     Display a successful message after creating a pull request in {repo} repository owned by {owner}.
