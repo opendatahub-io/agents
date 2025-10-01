@@ -1,2 +1,4 @@
 openai>=1.0.0
+greenlet>=3.2.4
+llama-stack>=0.2.22
 
