@@ -44,32 +44,14 @@ class TroubleshootingCrew():
     @agent
     def developer(self) -> Agent:
         llm = LLM(
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
         )
 
         return Agent(
             config=self.agents_config['developer'],
             verbose=True,
-            tools=self.get_mcp_tools("create_branch", "create_or_update_file", "push_files", "create_pull_request"),
+            tools=self.get_mcp_tools("create_branch", "get_file_contents", "create_or_update_file", "create_pull_request"),
             llm=llm
-        )
-
-    # @task
-    # def list_issues_task(self) -> Task:
-    #     return Task(
-    #         config=self.tasks_config['list_issues_task']
-    #     )
-
-    @task
-    def create_branch_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['create_branch_task']
-        )
-
-    @task
-    def update_file_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['update_file_task']
         )
 
     @task
