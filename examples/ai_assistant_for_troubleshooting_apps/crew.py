@@ -34,7 +34,7 @@ class TroubleshootingCrew():
     
     # Configure GitHub MCP server
     mcp_server_params: Union[list[MCPServerAdapter | dict[str, str]], MCPServerAdapter, dict[str, str]] = {
-        "url": "https://api.githubcopilot.com/mcp/x/issues",
+        "url": "https://api.githubcopilot.com/mcp/",
         "transport": "streamable-http",
         "headers": {
             "Authorization": "Bearer " + gh_pat,
@@ -44,20 +44,20 @@ class TroubleshootingCrew():
     @agent
     def developer(self) -> Agent:
         llm = LLM(
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
         )
 
         return Agent(
             config=self.agents_config['developer'],
             verbose=True,
-            tools=self.get_mcp_tools(),
+            tools=self.get_mcp_tools("create_branch", "get_file_contents", "create_or_update_file", "create_pull_request"),
             llm=llm
         )
 
     @task
-    def list_issues_task(self) -> Task:
+    def create_pull_request_task(self) -> Task:
         return Task(
-            config=self.tasks_config['list_issues_task']
+            config=self.tasks_config['create_pull_request_task']
         )
 
     @crew

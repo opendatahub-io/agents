@@ -1,6 +1,21 @@
-list_issues_task:
+create_pull_request_task:
   description: >
-    Use the github server tools to search and return open issues from the {repo} repository owned by {owner}.
+    **GOAL**:
+    Update a Kubernetes resource manifest file without affecting other resources within it.
+
+    **STEPS**:
+    1.  Create a new branch {branch} in the {repo} repository owned by {owner}.
+    2.  Locate the Kubernetes manifest file containing the 'pod-reader-test' pod in the repository.
+    3.  Identify the 'pod-reader-test' pod resource by its 'kind' and 'name'.
+    4.  Update the **'image'** field of the 'tester' container to **'quay.io/keycloak/keycloak:26.3'**.
+    5.  Save the updated file.
+    6.  Commit the changes to the new branch with a clear commit message.
+    7.  Push the new branch to the remote repository.
+    8.  Open a new pull request targeting the 'main' branch, with a title that references the issue being fixed.
+    9.  Add a brief description to the pull request summarizing the change.
   expected_output: >
-    Display a markdown list of titles of the open issues in the {repo} repository owned by {owner}.
+    Display the final response as a markdown block containing:
+    1. Confirmation that the file modification and commit were successful.
+    2. The full link to the newly create pull request.
+    3. A summary of the changes that were made.
   agent: developer

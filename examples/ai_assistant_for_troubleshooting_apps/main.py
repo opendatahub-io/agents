@@ -16,13 +16,15 @@ Pre-requisites:
 """
 
 import os
+from datetime import datetime
 
 from crew import TroubleshootingCrew
 
 if __name__ == "__main__":
     inputs = {
         'repo': os.getenv("REPO_NAME", "demo-cluster-resources"),
-        'owner': os.getenv("OWNER", "s-akhtar-baig")
+        'owner': os.getenv("OWNER", "s-akhtar-baig"),
+        'branch': f'update_spec_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
     }
 
     try:
