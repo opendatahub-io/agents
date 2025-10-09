@@ -29,23 +29,46 @@ class TroubleshootingCrew():
     agents_config = 'config/agents.yaml'
     tasks_config = 'config/tasks.yaml'
 
+    # Kubernetes token
+    kube_token = os.getenv("KUBE_TOKEN", None)
+
     # GitHub token
     gh_pat = os.getenv("GITHUB_TOKEN", None)
 
     # Configure multiple MCP servers
     mcp_server_params: Union[list[MCPServerAdapter | dict[str, str]], MCPServerAdapter, dict[str, str]] = [
         {
+            "url": "http://localhost:8080/sse",
+            "transport": "sse",
+            "headers": {
+                "Authorization": "Bearer " + kube_token,
+            },
+        },
+        {
             "url": "https://api.githubcopilot.com/mcp/",
             "transport": "streamable-http",
             "headers": {
                 "Authorization": "Bearer " + gh_pat,
-            }
+            },
         },
         {
             "url": "http://localhost:13080/sse",
             "transport": "sse",
-        }
+        },
     ]
+
+    @agent
+    def platform(self) -> Agent:
+        llm = LLM(
+            model="openai/gpt-4o",
+        )
+
+        return Agent(
+            config=self.agents_config['platform'],
+            verbose=True,
+            tools=self.get_mcp_tools(),
+            llm=llm
+        )
 
     @agent
     def developer(self) -> Agent:
@@ -74,16 +97,23 @@ class TroubleshootingCrew():
         )
 
     @task
+    def diagnose_deployment_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['diagnose_deployment_task']
+        )
+
+    @task
     def create_pull_request_task(self) -> Task:
         return Task(
-            config=self.tasks_config['create_pull_request_task']
+            config=self.tasks_config['create_pull_request_task'],
+            context=[self.diagnose_deployment_task()],
         )
 
     @task
     def send_message_task(self) -> Task:
         return Task(
             config=self.tasks_config['send_message_task'],
-            context=[self.create_pull_request_task()]
+            context=[self.create_pull_request_task()],
         )
 
     @crew
