@@ -10,6 +10,7 @@ Pre-requisites:
     - REPO_NAME
     - OWNER
     - GITHUB_TOKEN
+    - KUBE_TOKEN
 
     # OpenAI API key to use gpt-4 model
     - OPENAI_API_KEY
@@ -26,9 +27,12 @@ if __name__ == "__main__":
         'owner': os.getenv("OWNER", "s-akhtar-baig"),
         'branch': f'update_spec_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}',
         'channel': "#social",
+        'pod': "pod-reader-test",
+        'namespace': "demo-auth",
     }
 
     try:
+
         result = TroubleshootingCrew().crew().kickoff(inputs=inputs)
 
         print("Testing Troubleshooting crew:")
