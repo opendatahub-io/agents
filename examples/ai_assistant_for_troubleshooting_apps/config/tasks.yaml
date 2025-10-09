@@ -19,3 +19,12 @@ create_pull_request_task:
     2. The full link to the newly create pull request.
     3. A summary of the changes that were made.
   agent: developer
+
+send_message_task:
+  description: >
+    Use the slack server tools to send the summary of changes made and the link to the created pull request to the {channel} channel.
+  expected_output: >
+    Display a message in the {channel} channel.
+  context:
+    - create_pull_request_task
+  agent: notifier
