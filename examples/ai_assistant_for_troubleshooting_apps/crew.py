@@ -31,15 +31,21 @@ class TroubleshootingCrew():
 
     # GitHub token
     gh_pat = os.getenv("GITHUB_TOKEN", None)
-    
-    # Configure GitHub MCP server
-    mcp_server_params: Union[list[MCPServerAdapter | dict[str, str]], MCPServerAdapter, dict[str, str]] = {
-        "url": "https://api.githubcopilot.com/mcp/",
-        "transport": "streamable-http",
-        "headers": {
-            "Authorization": "Bearer " + gh_pat,
+
+    # Configure multiple MCP servers
+    mcp_server_params: Union[list[MCPServerAdapter | dict[str, str]], MCPServerAdapter, dict[str, str]] = [
+        {
+            "url": "https://api.githubcopilot.com/mcp/",
+            "transport": "streamable-http",
+            "headers": {
+                "Authorization": "Bearer " + gh_pat,
+            }
+        },
+        {
+            "url": "http://localhost:13080/sse",
+            "transport": "sse",
         }
-    }
+    ]
 
     @agent
     def developer(self) -> Agent:
@@ -54,10 +60,30 @@ class TroubleshootingCrew():
             llm=llm
         )
 
+    @agent
+    def notifier(self) -> Agent:
+        llm = LLM(
+            model="openai/gpt-4o",
+        )
+
+        return Agent(
+            config=self.agents_config['notifier'],
+            verbose=True,
+            tools=self.get_mcp_tools(),
+            llm=llm
+        )
+
     @task
     def create_pull_request_task(self) -> Task:
         return Task(
             config=self.tasks_config['create_pull_request_task']
+        )
+
+    @task
+    def send_message_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['send_message_task'],
+            context=[self.create_pull_request_task()]
         )
 
     @crew
@@ -68,4 +94,3 @@ class TroubleshootingCrew():
             verbose=True,
         )
 
-    
