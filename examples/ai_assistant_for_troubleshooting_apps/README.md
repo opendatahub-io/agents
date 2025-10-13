@@ -17,13 +17,14 @@ uv sync
 source .venv/bin/activate
 ```
 
-Export the target GitHub repository name, the associated owner's username, GitHub API token, and OpenAI API token before running the provided scripts.
+Export the target GitHub repository name, user information, and credentials before running the provided scripts.
 
 ```
 export REPO_NAME=<repo_name>
 export OWNER=<username>
 export GITHUB_TOKEN=<your_gh_token>
 export OPENAI_API_KEY=<your_openai_key>
+export KUBE_TOKEN=<your_k8s_token>
 ```
 
 ## Run the Sample Code
