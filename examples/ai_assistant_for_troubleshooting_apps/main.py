@@ -16,38 +16,22 @@ Pre-requisites:
     - OPENAI_API_KEY
 """
 
+import asyncio
 import os
 import sys
 from datetime import datetime
 
-# from crew import TroubleshootingCrew
-from utils.k8s import KubernetesProbe
+from orchestrator import Orchestrator
+
+async def main():
+    try:
+        orchestrator = Orchestrator()
+        await orchestrator.monitor_cluster()
+    except Exception as exp:
+        raise Exception(f"An error occurred while monitoring the k8s cluster: {exp}")
+
 
 if __name__ == "__main__":
     sys.tracebacklimit = 0
-    # inputs = {
-    #     'repo': os.getenv("REPO_NAME", "demo-cluster-resources"),
-    #     'owner': os.getenv("OWNER", "s-akhtar-baig"),
-    #     'branch': f'update_spec_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}',
-    #     'channel': "#social",
-    #     'pod': "pod-reader-test",
-    #     'namespace': "demo-auth",
-    # }
 
-    # try:
-
-    #     result = TroubleshootingCrew().crew().kickoff(inputs=inputs)
-
-    #     print("Testing Troubleshooting crew:")
-    #     print(result)
-
-    # except Exception as e:
-    #     raise Exception(f"An error occurred while testing the troubleshooting crew: {e}")
-
-    try:
-        issues = KubernetesProbe().scan_namespaces()
-        print(f"Found the following issues in the K8s cluster:")
-        for issue in issues:
-            print(issue)
-    except Exception as e:
-        raise Exception(f"An error occurred while scanning cluster for issues: {e}")
+    asyncio.run(main())

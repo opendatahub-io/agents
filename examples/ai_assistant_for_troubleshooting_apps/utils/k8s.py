@@ -1,8 +1,8 @@
-import logging
-
 from utils.values import EXCLUDE_NAMESPACES, FLAG_STATES
 
-from kubernetes import client, config
+import asyncio
+import logging
+from kubernetes import client, config, watch
 
 class KubernetesProbe:
     """
@@ -27,6 +27,8 @@ class KubernetesProbe:
     def __init__(self):
         self._setup_logging()
         self._init_k8s_client()
+
+        self.issues = asyncio.Queue()
 
     def _setup_logging(self):
         """
@@ -105,3 +107,34 @@ class KubernetesProbe:
             raise RuntimeError(err_message)
 
         return issues
+
+    async def watch_events(self):
+        """
+        Watches events in the cluster and flags pods in waiting and terminating state.
+        Maintains a list of issues, if any, and ones that are flaggable.
+        """
+        w = watch.Watch()
+        try:
+            for event in w.stream(self.client.list_pod_for_all_namespaces):
+                pod = event['object']
+                namespace = pod.metadata.namespace
+
+                # Check fo excluded namespace
+                if namespace in EXCLUDE_NAMESPACES:
+                    continue
+
+                # Scan pod for known issues
+                issue = self._scan_pod(pod)
+                if issue:
+                    await self.issues.put(issue)
+        except Exception as exp:
+            err_message = f"Error occurred while watching for events: {exp}"
+            self.logger.error(err_message)
+            raise RuntimeError(err_message)
+
+    async def next_issue(self):
+        try:
+            return await self.issues.get()
+        except Exception as exp:
+            self.logger.error(f"Error occurred when retrieving a queued issue: {exp}")
+            return None
