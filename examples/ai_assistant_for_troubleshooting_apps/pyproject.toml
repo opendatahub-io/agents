@@ -8,6 +8,7 @@ dependencies = [
     "crewai==0.193.2",
     "crewai-tools[mcp]>=0.75.0",
     "greenlet==3.2.4",
+    "kubernetes>=34.1.0",
     "llama-stack==0.2.22",
     "mcp==1.14.1",
     "ollama==0.5.4",

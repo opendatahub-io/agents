@@ -40,9 +40,9 @@ class TroubleshootingCrew():
         {
             "url": "http://localhost:8080/sse",
             "transport": "sse",
-            "headers": {
-                "Authorization": "Bearer " + kube_token,
-            },
+            # "headers": {
+            #     "Authorization": "Bearer " + kube_token,
+            # },
         },
         {
             "url": "https://api.githubcopilot.com/mcp/",

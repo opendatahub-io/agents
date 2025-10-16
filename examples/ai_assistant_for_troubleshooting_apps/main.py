@@ -17,11 +17,20 @@ Pre-requisites:
 """
 
 import os
+import sys
 from datetime import datetime
+from collections import deque
 
 from crew import TroubleshootingCrew
+from utils.k8s import KubernetesProbe
+
+
+def get_issue_id(issue):
+    return f"{issue['namespace']}-{issue['pod']}-{issue['reason']}"
+
 
 if __name__ == "__main__":
+    sys.tracebacklimit = 0
     inputs = {
         'repo': os.getenv("REPO_NAME", "demo-cluster-resources"),
         'owner': os.getenv("OWNER", "s-akhtar-baig"),
@@ -31,12 +40,37 @@ if __name__ == "__main__":
         'namespace': "demo-auth",
     }
 
-    try:
+    seen_issues = set()
+    print("Watching for issues in the K8s cluster...")
 
-        result = TroubleshootingCrew().crew().kickoff(inputs=inputs)
+    while True:
+        try:
+            issues = KubernetesProbe().scan_namespaces()
+            new_issues = []
+            for issue in issues:
+                if get_issue_id(issue) not in seen_issues:
+                    new_issues.append(issue)
 
-        print("Testing Troubleshooting crew:")
-        print(result)
+            if new_issues:
+                print(f"Found the following issues in the K8s cluster:")
+                print(new_issues)
 
-    except Exception as e:
-        raise Exception(f"An error occurred while testing the troubleshooting crew: {e}")
+        except Exception as e:
+            raise Exception(f"An error occurred while scanning cluster for issues: {e}")
+
+        for issue in issues:
+            issue_id = get_issue_id(issue)
+            if issue_id in seen_issues:
+                continue
+
+            seen_issues.add(issue_id)
+
+            print(f"Diagnosing issue: {issue}")
+            try:
+                result = TroubleshootingCrew().crew().kickoff(inputs=inputs)
+
+                print("Testing Troubleshooting crew:")
+                print(result)
+
+            except Exception as e:
+                raise Exception(f"An error occurred while testing the troubleshooting crew: {e}")
