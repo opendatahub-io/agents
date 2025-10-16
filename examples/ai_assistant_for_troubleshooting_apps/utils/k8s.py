@@ -2,6 +2,8 @@ from utils.values import EXCLUDE_NAMESPACES, FLAG_STATES
 
 import asyncio
 import logging
+import queue
+import threading
 from kubernetes import client, config, watch
 
 class KubernetesProbe:
@@ -28,7 +30,8 @@ class KubernetesProbe:
         self._setup_logging()
         self._init_k8s_client()
 
-        self.issues = asyncio.Queue()
+        self.issues = queue.Queue()
+        self.has_issues = threading.Event()
 
     def _setup_logging(self):
         """
@@ -60,23 +63,30 @@ class KubernetesProbe:
     def _scan_pod(self, pod):
         """
         Check for pods with containers in waiting and terminated states.
-        Also check that the reason falls in the list of flaggable reasons. 
+        Also check that the reason falls in the list of flaggable reasons.
         """
+        if not pod.status.container_statuses:
+            return None
+
         for container_status in pod.status.container_statuses:
             state = container_status.state
             if not state:
                 continue
 
             # check if in terminated or waiting state
-            if state.waiting or state.terminated:
+            reason = None
+            if state.waiting:
                 reason = state.waiting.reason
-                if reason in FLAG_STATES:
-                    return {
-                        'pod': pod.metadata.name,
-                        'namespace': pod.metadata.namespace,
-                        'container': container_status.name,
-                        'reason': reason,
-                    }
+            elif state.terminated:
+                reason = state.terminated.reason
+
+            if reason and reason in FLAG_STATES:
+                return {
+                    'pod': pod.metadata.name,
+                    'namespace': pod.metadata.namespace,
+                    'container': container_status.name,
+                    'reason': reason,
+                }
         
         return None
 
@@ -108,7 +118,7 @@ class KubernetesProbe:
 
         return issues
 
-    async def watch_events(self):
+    def watch_events(self):
         """
         Watches events in the cluster and flags pods in waiting and terminating state.
         Maintains a list of issues, if any, and ones that are flaggable.
@@ -116,25 +126,43 @@ class KubernetesProbe:
         w = watch.Watch()
         try:
             for event in w.stream(self.client.list_pod_for_all_namespaces):
-                pod = event['object']
-                namespace = pod.metadata.namespace
+                object = event['object']
+                namespace = object.metadata.namespace
 
-                # Check fo excluded namespace
+                if object.kind != 'Pod':
+                    continue
+
+                # Check for excluded namespace
                 if namespace in EXCLUDE_NAMESPACES:
                     continue
 
                 # Scan pod for known issues
-                issue = self._scan_pod(pod)
+                issue = self._scan_pod(object)
                 if issue:
-                    await self.issues.put(issue)
+                    try:
+                        # Push issue to the queue
+                        self.issues.put_nowait(issue)
+                    except queue.Full:
+                        self.logger.warning("Issues queue is full; blocking until a free slot is available")
+                        self.issues.put(issue)
+
+                    # Set event to signal orchestrator
+                    self.has_issues.set()
+
         except Exception as exp:
             err_message = f"Error occurred while watching for events: {exp}"
             self.logger.error(err_message)
             raise RuntimeError(err_message)
+        finally:
+            w.stop()
 
-    async def next_issue(self):
+    def next_issue(self):
         try:
-            return await self.issues.get()
+            if self.issues.empty():
+                self.has_issues.clear()
+                return None
+            else:
+                return self.issues.get()
         except Exception as exp:
-            self.logger.error(f"Error occurred when retrieving a queued issue: {exp}")
+            self.logger.warning(f"Error occurred when retrieving a queued issue: {exp}")
             return None

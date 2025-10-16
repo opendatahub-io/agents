@@ -8,7 +8,7 @@ from crewai_tools import MCPServerAdapter
 from typing import List, Union
 
 @CrewBase
-class TroubleshootingCrew():
+class TroubleshootingCrew:
     """
     A multi-system agent that can monitor a Kubernetes cluster and help troubleshoot problems.
 
