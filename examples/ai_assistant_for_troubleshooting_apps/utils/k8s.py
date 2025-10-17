@@ -32,6 +32,7 @@ class KubernetesProbe:
 
         self.issues = queue.Queue()
         self.has_issues = threading.Event()
+        self.running = True
 
     def _setup_logging(self):
         """
@@ -69,6 +70,10 @@ class KubernetesProbe:
             return None
 
         for container_status in pod.status.container_statuses:
+            # return immediately for shutdown
+            if not self.running:
+                return None
+
             state = container_status.state
             if not state:
                 continue
@@ -125,29 +130,32 @@ class KubernetesProbe:
         """
         w = watch.Watch()
         try:
-            for event in w.stream(self.client.list_pod_for_all_namespaces):
-                object = event['object']
-                namespace = object.metadata.namespace
+            while self.running:
+                for event in w.stream(self.client.list_pod_for_all_namespaces, timeout_seconds=10):
+                    object = event['object']
+                    namespace = object.metadata.namespace
 
-                if object.kind != 'Pod':
-                    continue
+                    if object.kind != 'Pod':
+                        continue
 
-                # Check for excluded namespace
-                if namespace in EXCLUDE_NAMESPACES:
-                    continue
+                    # Check for excluded namespace
+                    if namespace in EXCLUDE_NAMESPACES:
+                        continue
 
-                # Scan pod for known issues
-                issue = self._scan_pod(object)
-                if issue:
-                    try:
-                        # Push issue to the queue
-                        self.issues.put_nowait(issue)
-                    except queue.Full:
-                        self.logger.warning("Issues queue is full; blocking until a free slot is available")
-                        self.issues.put(issue)
+                    # Scan pod for known issues
+                    issue = self._scan_pod(object)
+                    if issue:
+                        try:
+                            # Push issue to the queue
+                            self.issues.put_nowait(issue)
+                        except queue.Full:
+                            self.logger.warning("Issues queue is full; blocking until a free slot is available")
+                            self.issues.put(issue)
 
-                    # Set event to signal orchestrator
-                    self.has_issues.set()
+                        # Set event to signal orchestrator
+                        self.has_issues.set()
+
+            self.logger.info("Stopping watch_events due to shutdown signal")
 
         except Exception as exp:
             err_message = f"Error occurred while watching for events: {exp}"
