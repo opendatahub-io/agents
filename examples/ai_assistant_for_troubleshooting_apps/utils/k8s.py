@@ -33,6 +33,9 @@ class KubernetesProbe:
         self.issues = queue.Queue()
         self.has_issues = threading.Event()
         self.running = True
+        
+        # Track reported issues to prevent duplicates
+        self.reported_issues = set()  # Set of issue keys
 
     def _setup_logging(self):
         """
@@ -95,6 +98,27 @@ class KubernetesProbe:
         
         return None
 
+    def _create_issue_key(self, issue):
+        """
+        Create a unique key for an issue to track duplicates.
+        Uses pod name, namespace, container name, and reason.
+        """
+        return f"{issue['namespace']}/{issue['pod']}/{issue['container']}/{issue['reason']}"
+
+    def _is_duplicate_issue(self, issue):
+        """
+        Check if this issue has already been reported.
+        """
+        issue_key = self._create_issue_key(issue)
+        return issue_key in self.reported_issues
+
+    def _mark_issue_reported(self, issue):
+        """
+        Mark an issue as reported to prevent duplicates.
+        """
+        issue_key = self._create_issue_key(issue)
+        self.reported_issues.add(issue_key)
+
     def scan_namespaces(self):
         """
         Scans namespaces for pods in waiting and terminating state.
@@ -145,15 +169,22 @@ class KubernetesProbe:
                     # Scan pod for known issues
                     issue = self._scan_pod(object)
                     if issue:
-                        try:
-                            # Push issue to the queue
-                            self.issues.put_nowait(issue)
-                        except queue.Full:
-                            self.logger.warning("Issues queue is full; blocking until a free slot is available")
-                            self.issues.put(issue)
+                        # Check if this is a duplicate issue
+                        if not self._is_duplicate_issue(issue):
+                            # Mark as reported and add to queue
+                            self._mark_issue_reported(issue)
+                            try:
+                                # Push issue to the queue
+                                self.issues.put_nowait(issue)
+                            except queue.Full:
+                                self.logger.warning("Issues queue is full; blocking until a free slot is available")
+                                self.issues.put(issue)
 
-                        # Set event to signal orchestrator
-                        self.has_issues.set()
+                            # Set event to signal orchestrator
+                            self.has_issues.set()
+                            self.logger.info(f"New issue detected: {issue}")
+                        else:
+                            self.logger.debug(f"Duplicate issue ignored: {issue}")
 
             self.logger.info("Stopping watch_events due to shutdown signal")
 
