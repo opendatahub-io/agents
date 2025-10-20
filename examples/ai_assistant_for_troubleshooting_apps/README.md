@@ -27,7 +27,7 @@ If you don't already have a repository with your Kubernetes manifests, create a 
 
 1. Go to [GitHub](https://github.com) and sign in
 2. Refer to the [official docs](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository) for detailed instructions on creating a new repository
-3. (Optional) Copy the provided sample manifest files to your repository. Sample manifest files are stored under the manifest folder
+3. (Optional) Copy the provided sample manifest files to your repository. Sample manifest files are stored under the `sample_manifest_files` folder
 
 #### 2. Generate a Fine-Grained Access Token
 
