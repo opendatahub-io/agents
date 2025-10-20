@@ -2,7 +2,6 @@ EXCLUDE_NAMESPACES = ["kube-system", "kube-public", "kube-node-lease", "local-pa
 FLAG_STATES = [
     "CrashLoopBackOff",
     "ImagePullBackOff",
-    "ErrImagePull",
     "CreateContainerConfigError",
     "InvalidImageName",
     "OOMKilled",

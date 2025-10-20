@@ -17,9 +17,7 @@ Pre-requisites:
 """
 
 import asyncio
-import os
 import sys
-from datetime import datetime
 
 from orchestrator import Orchestrator
 

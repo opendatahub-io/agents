@@ -1,7 +1,10 @@
+from crew import TroubleshootingCrew
 from utils.k8s import KubernetesProbe
 
 import asyncio
+from datetime import datetime
 import logging
+import os
 import signal
 import threading
 from typing import Dict, Set
@@ -17,7 +20,6 @@ class Orchestrator:
 
         self.k8s = KubernetesProbe()
         self.max_no_of_crews = max_no_of_crews
-        self.sem = asyncio.Semaphore(max_no_of_crews)
         self.running = True
 
         # Add signal handlers for graceful shutdown
@@ -49,9 +51,33 @@ class Orchestrator:
         self.running = False
         self.k8s.has_issues.set()
 
-    async def _process_issue(self, issue):
-        # TODO: Create a crew that can process the issue
-        pass
+    def _process_issue(self, issue):
+        """
+        Process each issue by triggering the troubleshooting crew.
+        """
+        try:
+            print(f"\n{'='*50}")
+            print(f"Processing issue: {issue['pod']}/{issue['namespace']}")
+            print(f"{'='*50}\n")
+
+            # Configure inputs for the crew
+            inputs = {
+                'repo': os.getenv("REPO_NAME", "demo-cluster-resources"),
+                'owner': os.getenv("OWNER", "s-akhtar-baig"),
+                'branch': f'update_spec_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}',
+                'channel': os.getenv("SLACK_CHANNEL", "#social"),
+                'pod': issue['pod'],
+                'namespace': issue['namespace'],
+            }
+
+            # Execute the Troubleshooting crew
+            result = TroubleshootingCrew().crew().kickoff(inputs=inputs)
+
+            print(f"\n{'='*50}")
+            print(f"Result: {result}")
+            print(f"{'='*50}\n")
+        except Exception as exp:
+            self.logger.error(f"Error processing the issue in the {issue['pod']}/{issue['namespace']}: {exp}")
 
     async def monitor_cluster(self):
         # Create a new thread that monitors events in the cluster
@@ -68,9 +94,8 @@ class Orchestrator:
                 issue = self.k8s.next_issue()
                 if issue:
                     print(f"Received issue: {issue}")
-                    # FIXME: Create a crew that can process the issue
-                    # crew_task = asyncio.create_task(self._process_issue(issue))
-
+                    # Create a crew that can process the issue
+                    self._process_issue(issue)
         except Exception as exp:
             raise exp
         finally:
