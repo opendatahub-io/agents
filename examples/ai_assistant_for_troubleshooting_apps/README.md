@@ -44,6 +44,18 @@ If you don't already have a repository with your Kubernetes manifests, create a 
 
 This use-case utilizes the remote MCP server hosted by GitHub. Users must obtain a fine-grained token (as described in step 2) to grant required permissions to the agents.
 
+### Slack setup
+
+1. Follow the instructions outlined in the [Slack MCP README](https://github.com/opendatahub-io/agents/blob/main/examples/slack-mcp/README.md#create-a-slack-application-and-oauth-token) to setup a new slack application.
+2. Ensure that your bot is added to your workspace and is able to access your desired channels with the right permissions.
+3. Execute the `run-mcp.sh` script found under `examples/slack-mcp/slack` to start the server at port 13080.
+
+### Kubernetes setup
+
+1. Follow the instructions outlined in the [Kubernetes MCP README](https://github.com/opendatahub-io/agents/blob/main/examples/kubernetes-mcp/README.md#pre-requisites) to set up a local kind cluster if required, and also get the kubernetes mcp server running.
+2. Apply the manifests found under `sample_manifest_files` to simulate the scenario of having faulty workloads on your cluster.
+3. Ensure the mcp server is running on port 8080 of your local machine.
+
 ### Required Environment Variables
 
 Ensure that the target GitHub repository name, user information, and credentials are set.
@@ -54,10 +66,11 @@ export OWNER=<username>
 export GITHUB_TOKEN=<your_gh_token>
 ```
 
-Set the desired Slack channel that will be used to send updates.
+Set the desired Slack channel and token that will be used to send updates.
 
 ```
 export SLACK_CHANNEL=<your-slack-channel>
+export SLACK_MCP_TOKEN=<your-slack-token>
 ```
 
 Finally, set tokens associated to your OpenAI account and Kubernetes service account.
