@@ -10,10 +10,14 @@ Pre-requisites:
     - REPO_NAME
     - OWNER
     - GITHUB_TOKEN
-    - KUBE_TOKEN
 
-    # OpenAI API key to use gpt-4 model
+    # Desired Slack channel and token
+    - SLACK_CHANNEL
+    - SLACK_MCP_TOKEN
+
+    # OpenAI API key to use gpt-4 model and Kubernetes service account token
     - OPENAI_API_KEY
+    - KUBE_TOKEN
 """
 
 import asyncio

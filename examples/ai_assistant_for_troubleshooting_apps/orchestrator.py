@@ -80,6 +80,10 @@ class Orchestrator:
             self.logger.error(f"Error processing the issue in the {issue['pod']}/{issue['namespace']}: {exp}")
 
     async def monitor_cluster(self):
+        """
+        Main event loop that monitors k8s events and processes next available issue.
+        """
+
         # Create a new thread that monitors events in the cluster
         watch_thread = threading.Thread(target=self.k8s.watch_events)
         watch_thread.start()

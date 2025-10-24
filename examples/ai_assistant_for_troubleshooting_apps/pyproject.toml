@@ -14,5 +14,4 @@ dependencies = [
     "ollama==0.5.4",
     "openai==1.108.1",
     "sqlalchemy==2.0.43",
-    "asyncio>=4.0.0",
 ]

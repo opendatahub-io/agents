@@ -16,7 +16,6 @@ class KubernetesProbe:
     Additionally, only the pods with the following statuses are flagged: 
     - "CrashLoopBackOff"
     - "ImagePullBackOff"
-    - "ErrImagePull"
     - "CreateContainerConfigError"
     - "InvalidImageName"
     - "OOMKilled"

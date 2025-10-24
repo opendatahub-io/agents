@@ -30,10 +30,10 @@ class TroubleshootingCrew:
     tasks_config = 'config/tasks.yaml'
 
     # Kubernetes token
-    kube_token = os.getenv("KUBE_TOKEN", None)
+    kube_token = os.getenv("KUBE_TOKEN")
 
     # GitHub token
-    gh_pat = os.getenv("GITHUB_TOKEN", None)
+    gh_pat = os.getenv("GITHUB_TOKEN")
 
     # Configure multiple MCP servers
     mcp_server_params: Union[list[MCPServerAdapter | dict[str, str]], MCPServerAdapter, dict[str, str]] = [
