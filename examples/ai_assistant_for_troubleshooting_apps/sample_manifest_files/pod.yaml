@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-reader-test
+  namespace: demo-ns
+spec:
+  serviceAccountName: sa-pod-reader
+  containers:
+    - name: tester
+      image: quay.io/keycloak/keycloak:26.4
+      command: ["sleep", "infinity"]

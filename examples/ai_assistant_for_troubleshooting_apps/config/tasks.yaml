@@ -1,0 +1,38 @@
+diagnose_deployment_task:
+  description: >
+    Use the kubernetes server tools to diagnose the issue with the {pod} pod in the {namespace} namespace and provide recommended fix to pod config.
+  expected_output: >
+    Description of the problem with the {pod} pod in the {namespace} namespace and recommended changes to the pod configuration.
+  agent: platform
+
+create_pull_request_task:
+  description: >
+    **GOAL**:
+    Update a Kubernetes resource manifest file without affecting other resources within it.
+
+    **STEPS**:
+    1.  Create a new branch {branch} in the {repo} repository owned by {owner}.
+    2.  Implement the file updates as identified in the diagnosis task.
+    3.  Save the updated file or files.
+    4.  Commit the changes to the new branch with a clear commit message.
+    5.  Push the new branch to the remote repository.
+    6.  Open a new pull request targeting the 'main' branch, with a title that references the issue being fixed.
+    7.  Add a brief description to the pull request summarizing the change.
+
+  expected_output: >
+    Display the final response as a markdown block containing:
+    1. Confirmation that the file modification and commit were successful.
+    2. The full link to the newly create pull request.
+    3. A summary of the changes that were made.
+  context:
+    - diagnose_deployment_task
+  agent: developer
+
+send_message_task:
+  description: >
+    Use the slack server tools to send the summary of changes made and the full link to the created pull request to the {channel} channel.
+  expected_output: >
+    Display a message in the {channel} channel.
+  context:
+    - create_pull_request_task
+  agent: notifier

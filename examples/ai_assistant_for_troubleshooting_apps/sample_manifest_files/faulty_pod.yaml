@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: faulty-pod
+  namespace: demo-ns
+spec:
+  serviceAccountName: sa-pod-reader
+  containers:
+    - name: tester
+      image: quay.io/keycloak_non_existent/keycloak:26.4
+      command: ["sleep", "infinity"]
