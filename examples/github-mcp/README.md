@@ -12,3 +12,5 @@ that need to be set:
   OpenAI provided model (which it does by default)
 
 Run with: `go run github-mcp-example.go`.
+
+or for Python (from within the venv at the repository root): `python github-mcp-example.py` 
