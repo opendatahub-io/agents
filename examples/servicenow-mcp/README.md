@@ -25,6 +25,11 @@ go mod tidy
 go run servicenow-mcp-example.go
 ```
 
+or for Python (from within the venv located at the repository root):
+```
+python servicenow-mcp-example.py
+```
+
 ## Running the MCP server
 
 First you need to set up the following environment variables:
