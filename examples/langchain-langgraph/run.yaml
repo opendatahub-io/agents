@@ -1,0 +1,77 @@
+version: 2
+image_name: llama-stack-examples
+apis:
+- agents
+- inference
+- safety
+- tool_runtime
+- vector_io
+providers:
+  inference:
+  - provider_id: ${env.OLLAMA_URL:=ollama}
+    provider_type: remote::ollama
+    config:
+      url: ${env.OLLAMA_URL:=http://localhost:11434}
+  - provider_id: vllm
+    provider_type: remote::vllm
+    config:
+      url: ${env.DEV_CLUSTER_QWEN_URL}
+      api_token: ${env.DEV_CLUSTER_QWEN_API_KEY}
+      max_tokens: 4096
+      tsl_verify: false
+  - provider_id: gemini
+    provider_type: remote::gemini
+    config:
+      api_key: ${env.GEMINI_API_KEY:=}
+  - provider_id: openai
+    provider_type: remote::openai
+    config:
+      api_key: ${env.OPENAI_API_KEY:=}
+      base_url: ${env.OPENAI_BASE_URL:=https://api.openai.com/v1}
+  safety:
+  - provider_id: llama-guard
+    provider_type: inline::llama-guard
+    config:
+      excluded_categories: []
+  tool_runtime:
+    - provider_id: model-context-protocol
+      provider_type: remote::model-context-protocol
+      config: {}
+  agents:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      persistence_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/agents_store.db
+      responses_store:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/responses_store.db
+  vector_io:
+  - provider_id: ${env.MILVUS_URL:+milvus}
+    provider_type: inline::milvus
+    config:
+      db_path: ${env.MILVUS_DB_PATH:=~/.llama/distributions/custom}/milvus.db
+      kvstore:
+        type: sqlite
+        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/milvus_registry.db
+models:
+- metadata: {}
+  model_id: ${env.INFERENCE_MODEL:=llama3.2:3b}
+  provider_id: ollama
+  provider_model_id: null
+- metadata: {}
+  model_id: ${env.SAFETY_MODEL:=llama-guard3:8b}
+  provider_id: ollama
+  provider_model_id: null
+shields:
+- provider_id: llama-guard
+  shield_id: ${env.SAFETY_MODEL:=llama-guard3:8b}
+  provider_shield_id: null
+vector_dbs: []
+datasets: []
+scoring_fns: []
+benchmarks: []
+tool_groups: []
+server:
+  port: 8321
