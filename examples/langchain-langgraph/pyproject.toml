@@ -5,7 +5,7 @@ description = "LangChain / LangGraph Customer Service Example"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "llama-stack==0.2.22",
+    "llama-stack==0.3.1",
     "mcp==1.14.1",
     "ollama==0.6.0",
     "openai==1.109.1",
@@ -24,3 +24,6 @@ dependencies = [
     "google-auth==2.32.0",
     "mcp-server-git==2025.9.25",
 ]
+
+[tool.setuptools]
+py-modules = ["app", "workflow"]

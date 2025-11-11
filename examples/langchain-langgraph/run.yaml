@@ -1,11 +1,14 @@
 version: 2
 image_name: llama-stack-examples
+
 apis:
 - agents
 - inference
 - safety
 - tool_runtime
 - vector_io
+- files
+
 providers:
   inference:
   - provider_id: ${env.OLLAMA_URL:=ollama}
@@ -41,37 +44,62 @@ providers:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config:
-      persistence_store:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/agents_store.db
-      responses_store:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/responses_store.db
+      persistence:
+        agent_state:
+          backend: kv_default
+          namespace: agents
+        responses:
+          backend: sql_default
+          table_name: responses
   vector_io:
   - provider_id: ${env.MILVUS_URL:+milvus}
     provider_type: inline::milvus
     config:
-      db_path: ${env.MILVUS_DB_PATH:=~/.llama/distributions/custom}/milvus.db
-      kvstore:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/custom}/milvus_registry.db
-models:
-- metadata: {}
-  model_id: ${env.INFERENCE_MODEL:=llama3.2:3b}
-  provider_id: ollama
-  provider_model_id: null
-- metadata: {}
-  model_id: ${env.SAFETY_MODEL:=llama-guard3:8b}
-  provider_id: ollama
-  provider_model_id: null
-shields:
-- provider_id: llama-guard
-  shield_id: ${env.SAFETY_MODEL:=llama-guard3:8b}
-  provider_shield_id: null
-vector_dbs: []
-datasets: []
-scoring_fns: []
-benchmarks: []
-tool_groups: []
+      persistence:
+        namespace: milvus
+        backend: kv_default
+  files:
+  - provider_id: localfs
+    provider_type: inline::localfs
+    config:
+      storage_dir: .llama/files
+      metadata_store:
+        table_name: files_metadata
+        namespace: files
+        backend: sql_default
+registered_resources:
+  models: {}
+  shields:
+  - provider_id: llama-guard
+    shield_id: ${env.SAFETY_MODEL:=ollama/llama-guard3:8b}
+    provider_shield_id: null
+
+  vector_dbs: []
+  datasets: []
+  scoring_fns: []
+  benchmarks: []
+  tool_groups: []
+
+storage:
+  backends:
+    kv_default:
+      type: kv_sqlite
+      db_path: .llama/kvstore.db
+    sql_default:
+      type: sql_sqlite
+      db_path: .llama/sql_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: kv_default
+    inference:
+      table_name: inference_store
+      backend: sql_default
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+
 server:
   port: 8321
