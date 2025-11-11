@@ -28,11 +28,16 @@ that need to be set:
 
 * INFERENCE_MODEL can be used to alter the model used
 
-To run:
+To run Go script:
 
 ```
 go mod tidy
 go run google-doc-mcp-example.go
+```
+
+or Python (from within the project root venv):
+```
+python google-doc-mcp-example.py
 ```
 
 ## Running the MCP server for this example
