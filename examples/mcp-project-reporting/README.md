@@ -12,12 +12,12 @@ This repository gives an example of a reporting tool built on [Llama Stack](http
 
 Install Llama Stack:
 
-```
+```sh
 pip install -U llama_stack
 ```
 
 Start the Llama Stack server with the provided configuration:
-```
+```sh
 llama stack run run.yaml
 ```
 
@@ -27,12 +27,12 @@ Note the `auth` block at the end of `run.yaml`. Follow [the `jwks-simple` README
 
 With the server running, obtain and store a token:
 
-```
+```sh
 TOKEN=$(curl -X POST localhost:3000/token | jq -r .token)
 ```
 
 This example uses OpenAI. After defining `OPENAI_API_KEY`, verify that Llama Stack successfully calls OpenAI APIs:
-```
+```sh
 curl --silent -X POST --header "Authorization: Bearer $TOKEN" localhost:8321/v1/openai/v1/responses -d '{
    "model": "gpt-4",
     "input": "Tell me a three sentence bedtime story about a unicorn."
@@ -41,20 +41,20 @@ curl --silent -X POST --header "Authorization: Bearer $TOKEN" localhost:8321/v1/
 
 ### MCP Integration
 
-Use the provided `docker-compose.yaml` file to start a JIRA server after adding your GitHub and JIRA credentials as per thost projects' respective documentation:
+Use the provided `docker-compose.yaml` file to start a JIRA server after adding your GitHub and JIRA credentials as per those projects' respective documentation:
 
-```
+```sh
 docker-compose up
 ```
 
 or
-```
+```sh
 podman compose --file docker-compose.yml up
 ```
 
 Finally, run a test query with tool calling configured and with a GitHub access token (replace `github_token` below) and using the same `TOKEN` obtained above using `jwks-simple`:
 
-```
+```sh
 curl -s -v http://localhost:8321/v1/responses \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
@@ -75,7 +75,7 @@ curl -s -v http://localhost:8321/v1/responses \
         "server_description": "GitHub",
         "server_url": "https://api.githubcopilot.com/mcp/x/repos/readonly",
         "require_approval": "never",
-	"headers": {"Authorization": "Bearer github_token"}
+        "headers": {"Authorization": "Bearer github_token"}
       }
     ]
   }'
@@ -87,13 +87,13 @@ Try changing the query and model to explore the abilities and limitations of wha
 
 This setup is a good example of the abilities and limitations of a single request/response model with an MCP-enabled model. For example, a specific query such as `whats new with with repository llamastack/llama-stack` succeeds, with a response that looks like
 
-```
+```text
 The latest release for the repository `llamastack/llama-stack` is `v0.3.1` and it was published on 2025-10-31. The changes include:\n\n- Fixes for 0.3.1 release \n- Install client from release branch before uv sync\n- Handle missing external_providers_dir\n- Unset empty UV index
 ```
 
 Meanwhile, a general query such as `whats new with my project` gets a response like:
 
-```
+```text
 I'm sorry, but without any specific project information or context, it's not possible to generate an update. Could you please provide the name or detail of the project you want updates for?
 ```
 
@@ -103,6 +103,6 @@ In order to serve this query, the application would have to first query for a li
 
 Replace `permit` with `forbid` in the `run.yaml` and restart `llamastack` to see that user `alice@example.com` is no longer allowed access to e.g. the models endpoint:
 
-```
+```sh
 curl -X POST --silent --header "Authorization: Bearer $TOKEN" --header "Content-Type: application/json" localhost:8321/v1/models -d '{"model_id": "gpt-4o", "provider_id": "openai", "provider_model_id": "gpt-4o", "provider_type": "remote::openai", "metadata": {}, "model_type": "llm"}'
 ```
