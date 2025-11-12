@@ -78,11 +78,26 @@ curl -s -v http://localhost:8321/v1/responses \
 	"headers": {"Authorization": "Bearer github_token"}
       }
     ]
-  }' | jq .
+  }'
 ```
 
 Try changing the query and model to explore the abilities and limitations of what this formula is capable of. For example, you may have to specifically ask for the commits in a particular GitHub repository as this setup does not have multi-turn conversational handling, i.e., cannot issue one query to get a list of available projects and than another to get more detailed information to summarize for you.
 
+#### Examples
+
+This setup is a good example of the abilities and limitations of a single request/response model with an MCP-enabled model. For example, a specific query such as `whats new with with repository llamastack/llama-stack` succeeds, with a response that looks like
+
+```
+The latest release for the repository `llamastack/llama-stack` is `v0.3.1` and it was published on 2025-10-31. The changes include:\n\n- Fixes for 0.3.1 release \n- Install client from release branch before uv sync\n- Handle missing external_providers_dir\n- Unset empty UV index
+```
+
+Meanwhile, a general query such as `whats new with my project` gets a response like:
+
+```
+I'm sorry, but without any specific project information or context, it's not possible to generate an update. Could you please provide the name or detail of the project you want updates for?
+```
+
+In order to serve this query, the application would have to first query for a list of available projects, then query for information for each project, and then summarize. At the time of this writing, that is not something that is automatically done.
 
 ### Access Control Validation
 
