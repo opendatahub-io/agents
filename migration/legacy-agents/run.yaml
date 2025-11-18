@@ -2,6 +2,7 @@ version: '2'
 image_name: sample-notebook
 apis:
 - agents
+- batches
 - datasetio
 - eval
 - files
@@ -9,7 +10,6 @@ apis:
 - post_training
 - safety
 - scoring
-- telemetry
 - tool_runtime
 - vector_io
 providers:
@@ -36,17 +36,17 @@ providers:
   - provider_id: faiss
     provider_type: inline::faiss
     config:
-      kvstore:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/faiss_store.db
+      persistence:
+        namespace: vector_io::faiss
+        backend: kv_default
   files:
   - provider_id: meta-reference-files
     provider_type: inline::localfs
     config:
-      storage_dir: ${env.FILES_STORAGE_DIR:=~/.llama/distributions/sample-notebook/files}
+      storage_dir: ${env.FILES_STORAGE_DIR:=~/.llama/distributions/starter/files}
       metadata_store:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/files_metadata.db
+        table_name: files_metadata
+        backend: sql_default
   safety:
   - provider_id: llama-guard
     provider_type: inline::llama-guard
@@ -56,44 +56,35 @@ providers:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config:
-      persistence_store:
-        type: sqlite
-        namespace: null
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/agents_store.db
-      responses_store:
-        type: sqlite
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/responses_store.db
-  telemetry:
-  - provider_id: meta-reference
-    provider_type: inline::meta-reference
-    config:
-      service_name: "${env.OTEL_SERVICE_NAME:=\u200B}"
-      sinks: ${env.TELEMETRY_SINKS:=console,sqlite}
-      sqlite_db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/trace_store.db
-      otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
+      persistence:
+        agent_state:
+          namespace: agents
+          backend: kv_default
+        responses:
+          table_name: responses
+          backend: sql_default
+          max_write_queue_size: 10000
+          num_writers: 4
   eval:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config:
       kvstore:
-        type: sqlite
-        namespace: null
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/meta_reference_eval.db
+        namespace: eval
+        backend: kv_default
   datasetio:
   - provider_id: huggingface
     provider_type: remote::huggingface
     config:
       kvstore:
-        type: sqlite
-        namespace: null
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/huggingface_datasetio.db
+        namespace: datasetio::huggingface
+        backend: kv_default
   - provider_id: localfs
     provider_type: inline::localfs
     config:
       kvstore:
-        type: sqlite
-        namespace: null
-        db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/localfs_datasetio.db
+        namespace: datasetio::localfs
+        backend: kv_default
   scoring:
   - provider_id: basic
     provider_type: inline::basic
@@ -127,54 +118,62 @@ providers:
   - provider_id: model-context-protocol
     provider_type: remote::model-context-protocol
     config: {}
-  - provider_id: wolfram-alpha
-    provider_type: remote::wolfram-alpha
+  batches:
+  - provider_id: reference
+    provider_type: inline::reference
     config:
-      api_key: ${env.WOLFRAM_ALPHA_API_KEY:}
-metadata_store:
-  type: sqlite
-  db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/registry.db
-inference_store:
-  type: sqlite
-  db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/sample-notebook}/inference_store.db
-models:
-- metadata: {}
-  model_id: Llama-3.3-70B-Instruct
-  provider_model_id: Llama-3.3-70B-Instruct
-  provider_id: llama-openai-compat
-  model_type: llm
-- metadata: {}
-  model_id: gpt-3.5-turbo
-  provider_model_id: gpt-3.5-turbo
-  provider_id: openai
-  model_type: llm
-- metadata: {}
-  model_id: gpt-4o
-  provider_model_id: gpt-4o
-  provider_id: openai
-  model_type: llm
-- metadata: {}
-  model_id: watsonx-Llama-3.3-70B-Instruct
-  provider_id: watsonx
-  provider_model_id: meta-llama/llama-3-3-70b-instruct
-  model_type: llm
-- metadata:
-    embedding_dimension: 768
-  model_id: granite-embedding-125m
-  provider_id: sentence-transformers
-  provider_model_id: ibm-granite/granite-embedding-125m-english
-  model_type: embedding
-shields: []
-vector_dbs: []
-datasets: []
-scoring_fns: []
-benchmarks: []
-tool_groups:
-- toolgroup_id: builtin::websearch
-  provider_id: tavily-search
-- toolgroup_id: builtin::rag
-  provider_id: rag-runtime
-- toolgroup_id: builtin::wolfram_alpha
-  provider_id: wolfram-alpha
+      kvstore:
+        namespace: batches
+        backend: kv_default
+storage:
+  backends:
+    kv_default:
+      type: kv_sqlite
+      db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/kvstore.db
+    sql_default:
+      type: sql_sqlite
+      db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/sql_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: kv_default
+    inference:
+      table_name: inference_store
+      backend: sql_default
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+    prompts:
+      namespace: prompts
+      backend: kv_default
+registered_resources:
+  models: []
+  shields:
+  - shield_id: llama-guard
+    provider_id: ${env.SAFETY_MODEL:+llama-guard}
+    provider_shield_id: ${env.SAFETY_MODEL:=}
+  - shield_id: code-scanner
+    provider_id: ${env.CODE_SCANNER_MODEL:+code-scanner}
+    provider_shield_id: ${env.CODE_SCANNER_MODEL:=}
+  vector_dbs: []
+  datasets: []
+  scoring_fns: []
+  benchmarks: []
+  tool_groups:
+  - toolgroup_id: builtin::websearch
+    provider_id: tavily-search
+  - toolgroup_id: builtin::rag
+    provider_id: rag-runtime
 server:
   port: 8321
+telemetry:
+  enabled: true
+vector_stores:
+  default_provider_id: faiss
+  default_embedding_model:
+    provider_id: sentence-transformers
+    model_id: nomic-ai/nomic-embed-text-v1.5
+safety:
+  default_shield_id: llama-guard
