@@ -32,7 +32,7 @@ To launch Llama Stack with this configuration, open a separate terminal pane and
 llama stack run run.yaml --image-type venv
 ```
 
-> Note: if you with to use an OpenAI provided model, uncomment the relevant openai configuration fields in your `run.yaml`. Also, ensure before running the above command that the `OPENAI_API_KEY` environment variable is set to your OpenAI API key, and `INFERENCE_MODEL` is set to your chosen model using the `openai/<model_name>` naming convention. If unset, `INFERENCE_MODEL` will default to `openai/gpt-4o`
+> Note: if you wish to use an OpenAI provided model, uncomment the relevant openai configuration fields in your `run.yaml`. Also, ensure before running the above command that the `OPENAI_API_KEY` environment variable is set to your OpenAI API key, and `INFERENCE_MODEL` is set to your chosen model using the `openai/<model_name>` naming convention. If unset, `INFERENCE_MODEL` will default to `openai/gpt-4o`
 
 ### Responses API
 
