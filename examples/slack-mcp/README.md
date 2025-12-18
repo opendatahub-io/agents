@@ -58,6 +58,13 @@ go mod tidy
 go run client.go
 ```
 
+Alternatively, to run the python example (from within the venv located at the repository root directory):
+
+```
+python client.py
+```
+
+
 ### Expected Output
 
 ```
