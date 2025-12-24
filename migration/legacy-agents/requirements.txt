@@ -9,7 +9,7 @@ appnope==0.1.4
 asttokens==3.0.0
 asyncpg==0.30.0
 attrs==25.3.0
-Authlib==1.6.1
+Authlib==1.6.5
 autoevals==0.0.129
 braintrust_core==0.0.59
 cachetools==6.2.0
