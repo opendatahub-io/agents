@@ -1,6 +1,6 @@
 accelerate==1.10.0
 aiohappyeyeballs==2.6.1
-aiohttp==3.12.15
+aiohttp==3.13.3
 aiosignal==1.4.0
 aiosqlite==0.21.0
 annotated-types==0.7.0
