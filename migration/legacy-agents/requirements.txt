@@ -37,7 +37,7 @@ executing==2.2.0
 faiss-cpu==1.11.0.post1
 fastapi==0.116.1
 fastmcp==2.10.6
-filelock==3.18.0
+filelock==3.20.3
 fire==0.7.0
 frozenlist==1.7.0
 fsspec==2025.3.0
