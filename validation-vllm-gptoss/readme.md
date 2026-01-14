@@ -19,8 +19,8 @@ Manually test that GPT-OSS models can correctly invoke function tools through th
 
 | Notebook | Description |
 |----------|-------------|
-| [`GPT-OSS-20b with vLLM.ipynb`](./GPT-OSS-20b%20with%20vLLM.ipynb) | Tests GPT-OSS-20b function tool calling |
-| [`GPT-OSS-120b with vLLM.ipynb`](./GPT-OSS-120b%20with%20vLLM.ipynb) | Tests GPT-OSS-120b function tool calling |
+| [GPT-OSS-20b with vLLM.ipynb](GPT-OSS-20b%20with%20vLLM.ipynb) | Tests GPT-OSS-20b function tool calling |
+| [GPT-OSS-120b with vLLM.ipynb](GPT-OSS-120b%20with%20vLLM.ipynb) | Tests GPT-OSS-120b function tool calling |
 
 Each notebook tests a weather function tool that fetches real weather data.
 
