@@ -8,6 +8,7 @@ This folder contains validation notebooks for any models through vLLM main branc
 validation-vllm/
 └── gpt-oss/
     └── function-tool-calling-responses/   # Function tool calling via Responses API
+    └── function-tool-calling-chatcompletions/   # Function tool calling via chatcompletions API
 ```
 
 ## Tests
