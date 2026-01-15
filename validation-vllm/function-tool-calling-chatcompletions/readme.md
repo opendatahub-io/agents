@@ -1,4 +1,4 @@
-# Validate Function Tool Calling with GPT-OSS via Chat Completions API (RHAIENG-2235)
+# Validate Function Tool Calling with GPT-OSS via Chat Completions API (RHAIENG-2236)
 
 ## Objective
 
