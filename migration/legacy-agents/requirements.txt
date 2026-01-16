@@ -121,7 +121,7 @@ ptyprocess==0.7.0
 pure_eval==0.2.3
 pyaml==25.7.0
 pyarrow==21.0.0
-pyasn1==0.6.1
+pyasn1==0.6.2
 pycparser==2.22
 pydantic==2.11.9
 pydantic-settings==2.10.1
