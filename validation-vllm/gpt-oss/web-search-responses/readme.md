@@ -1,4 +1,4 @@
-# Validate Web Search Tool Calling with GPT-OSS via Responses API (RHAIENG-XXXX)
+# Validate Web Search Tool Calling with GPT-OSS via Responses API (RHAIENG-2241)
 
 ## Objective
 
