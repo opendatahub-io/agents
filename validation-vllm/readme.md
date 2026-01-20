@@ -17,3 +17,4 @@ validation-vllm/
 |------|--------|--------|
 | [Function Tool Calling (Responses API)](gpt-oss/function-tool-calling-responses/) | GPT-OSS-20b, GPT-OSS-120b | ✅ Passed |
 | [Function Tool Calling (Chat Completions API)](gpt-oss/function-tool-calling-chatcompletions/) | GPT-OSS-20b, GPT-OSS-120b | ✅ Passed |
+| [Web Search Tool Calling (Responses API)](gpt-oss/web-search-responses/) | GPT-OSS-20b, GPT-OSS-120b | ⚠️ Partial |
