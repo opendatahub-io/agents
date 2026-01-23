@@ -1,0 +1,23 @@
+[project]
+name = "log-monitor-agent"
+version = "0.1.0"
+description = "Log Monitor Agent Example - LangChain/LangGraph with Llama Stack"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "langchain>=1.2.6",
+    "langchain-mcp-adapters>=0.1.0",
+    "langchain-openai>=1.1.7",
+    "langgraph>=1.0.7",
+    "llama-stack>=0.4.2",
+    "openai>=2.15.0",
+    "pydantic>=2.12.5",
+    "pytest>=8.4.0",
+]
+
+[project.scripts]
+log-monitor-agent = "log_monitor_agent:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
