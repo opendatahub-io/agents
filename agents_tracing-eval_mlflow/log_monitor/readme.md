@@ -36,8 +36,10 @@ Log Message → Classify → Diagnose → Assess Severity → Route Action
 1. **Start LlamaStack server** on port 8321
 
 2. **Set OpenAI API key** (for Agent-as-a-Judge)
-   ```bash
-   export OPENAI_API_KEY=your_key
+   
+   Make sure `OPENAI_API_KEY` is set in the `.env` file in the parent directory (`agents_tracing-eval_mlflow/.env`):
+   ```
+   OPENAI_API_KEY=your_key
    ```
 
 3. **Run the notebook**

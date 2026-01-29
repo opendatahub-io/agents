@@ -48,16 +48,10 @@ Both agents were enhanced with:
 
 3. **Set environment variables**
    
-   Create a `.env` file in the root directory:
+   Create a `.env` file in this directory (`agents_tracing-eval_mlflow/.env`):
    ```
    OPENAI_API_KEY=your_key
    NPS_API_KEY=your_nps_key
-   ```
-   
-   Then export them:
-   ```bash
-   export OPENAI_API_KEY=your_key
-   export NPS_API_KEY=your_nps_key
    ```
    
    Get a free NPS API key at https://www.nps.gov/subjects/developer/get-started.htm

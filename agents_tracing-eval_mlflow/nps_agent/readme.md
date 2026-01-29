@@ -31,8 +31,10 @@ User Query → LlamaStack → MCP Server → NPS API
    ```
 
 3. **Set OpenAI API key** (for Agent-as-a-Judge)
-   ```bash
-   export OPENAI_API_KEY=your_key
+   
+   Make sure `OPENAI_API_KEY` is set in the `.env` file in the parent directory (`agents_tracing-eval_mlflow/.env`):
+   ```
+   OPENAI_API_KEY=your_key
    ```
 
 4. **Run the notebook**
