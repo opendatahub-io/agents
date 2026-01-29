@@ -79,3 +79,5 @@ Both agents were enhanced with:
 ├── requirements.txt
 └── readme.md
 ```
+## Updates (01/29/2026)
+> **Note:** MLflow 3.9.0 introduced a [Judge Builder UI](https://www.linkedin.com/posts/mlflow-org_mlflow-genai-llmops-activity-7422683289041244160-yTOU) that lets you define and iterate on custom LLM judge prompts directly from the UI. You can create prompts, test-run them on your traces, and then use them for online monitoring or via the Python SDK. This is an alternative to defining judges in code as shown in these notebooks.
