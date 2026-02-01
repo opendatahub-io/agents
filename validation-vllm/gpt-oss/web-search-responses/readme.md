@@ -4,17 +4,22 @@
 
 Manually test that GPT-OSS models can correctly trigger and use web search results through the Llama Stack Responses API.
 
-## Test Results (2026-01-23)
+## Test Results
 
-✅ **GPT-OSS-20b** with **vLLM 0.11.2+rhai5**: All 3 prompts completed successfully with proper responses. Web search tool calls were attempted but failed (server-side configuration issue). Models gracefully handled failures and provided responses.
+### 2026-01-31 Run (After BRAVE_SEARCH_API_KEY Configuration)
 
-✅ **GPT-OSS-120b** with **vLLM 0.11.2+rhai5**: All 3 prompts completed successfully with proper responses. Web search tool calls were attempted but failed (server-side configuration issue). Models gracefully handled failures and provided detailed responses.
+✅ **GPT-OSS-20b** with **vLLM 0.11.2+rhai5**: 
+- Prompt 1: ✅ Completed with 4 search calls (all completed, 0 failed). Response status: completed. Response text: 1,192 chars.
+- Prompt 2: ⚠️ Completed with 3 search calls (2 completed, 1 failed). Response status: completed. Response text: 0 chars (empty - parsing error).
+- Prompt 3: ⚠️ Completed with 7 search calls (5 completed, 2 failed). Response status: completed. Response text: 0 chars (empty - parsing error).
+
+**Note:** After configuring `BRAVE_SEARCH_API_KEY` from `~/.profile`, web searches are executing successfully. Total: 11 searches completed, 3 failed. Prompt 1 generated a full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to a server-side parsing error: `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a Llama Stack bug where the response parser fails to handle certain vLLM response formats, even though the model successfully generates the response text.
 
 ## Setup
 
-1. **vLLM**: Start GPT-OSS models on the target vLLM versions (e.g., `main` and `0.11.2+rhai5`)
+1. **vLLM**: Start GPT-OSS models on the target vLLM versions (e.g., `0.11.2+rhai5`)
 2. **Llama Stack**: Ensure the Responses API is exposed (example: `http://127.0.0.1:8321`)
-3. **Web Search**: Configure the Tavily integration in the Llama Stack server environment (e.g., `TAVILY_API_KEY`)
+3. **Web Search**: Configure Brave Search API key in the Llama Stack server environment (e.g., `BRAVE_SEARCH_API_KEY`)
 4. **.env**: Set `LLAMA_STACK_URL=http://127.0.0.1:8321` (or rely on notebook defaults)
 
 ## Test Matrix
@@ -22,14 +27,12 @@ Manually test that GPT-OSS models can correctly trigger and use web search resul
 | Model | vLLM Version |
 |------|---------------|
 | GPT-OSS-20b | 0.11.2+rhai5 |
-| GPT-OSS-120b | 0.11.2+rhai5 |
 
 ## Notebooks
 
 | Notebook | Model | vLLM Version |
 |----------|-------|--------------|
 | [`GPT-OSS-20b_with_vLLM_0.11.2+rhai5.ipynb`](./GPT-OSS-20b_with_vLLM_0.11.2+rhai5.ipynb) | GPT-OSS-20b | 0.11.2+rhai5 |
-| [`GPT-OSS-120b_with_vLLM_0.11.2+rhai5.ipynb`](./GPT-OSS-120b_with_vLLM_0.11.2+rhai5.ipynb) | GPT-OSS-120b | 0.11.2+rhai5 |
 
 ## Test Scenarios (Prompts)
 
@@ -59,108 +62,29 @@ print(response.output_text)
 
 ## Results Summary
 
+### 2026-01-31 Run (After BRAVE_SEARCH_API_KEY Configuration)
+
 | Model | vLLM Version | Web Search Triggered | Result Quality | Notes |
 |------|---------------|----------------------|----------------|-------|
-| GPT-OSS-20b | 0.11.2+rhai5 | ✅ | ✅ All Passed | All 3 prompts completed with proper responses (627, 595, 398 chars). Web search calls failed but models handled gracefully. |
-| GPT-OSS-120b | 0.11.2+rhai5 | ✅ | ✅ All Passed | All 3 prompts completed with proper responses (2809, 731, 677 chars). Web search calls failed but models handled gracefully. |
+| GPT-OSS-20b | 0.11.2+rhai5 | ✅ | ⚠️ Partial | All 3 prompts completed with web search calls executing. Total: 11 searches completed, 3 failed. Prompt 1 generated full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to Llama Stack parsing error (`RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`). The model IS generating responses (visible in error logs), but Llama Stack's parser fails to handle certain vLLM response formats. Brave Search API key is working and web search integration is functional. |
 
 ## Analysis
 
-### Key Findings (2026-01-23)
+### Key Findings (2026-01-31 - After API Key Configuration)
 
-- **Web Search Triggering**: Both models correctly triggered web search tool calls for all prompts when needed.
-- **Tool Call Failures**: All web search tool calls failed (status: `failed`), indicating a server-side configuration issue (likely Tavily API key or connectivity). This is not a model or client-side issue.
-- **Response Quality**: Despite search failures, both models:
-  - **20b**: Provided concise, helpful responses acknowledging the search limitation and offering alternative guidance (627, 595, 398 chars)
-  - **120b**: Provided more detailed responses with comprehensive guidance and structured information (2809, 731, 677 chars)
-- **Model Behavior Differences**: 
-  - 120b model tends to provide more detailed, structured responses with tables and comprehensive guidance
-  - 20b model provides more concise responses but still complete and helpful
-  - Both models gracefully handle tool call failures without crashing or producing empty outputs
-- **Configuration**: Using `llama_stack_client` with `max_tool_calls=50` and `max_infer_iters=50` successfully prevents iteration limit issues that were observed in earlier runs.
+- **API Key Configuration**: After sourcing `~/.profile` to load `BRAVE_SEARCH_API_KEY`, web searches are now executing successfully.
+- **Search Execution**: Web search calls are completing successfully (11 completed, 3 failed out of 14 total).
+- **Test Results**: All 3 prompts completed with status "completed", but response quality varies:
+  - Prompt 1: Full response generated (1,192 chars) with 4 successful searches
+  - Prompt 2: Empty response (0 chars) despite 2 successful searches - **Llama Stack parsing error**
+  - Prompt 3: Empty response (0 chars) despite 5 successful searches - **Llama Stack parsing error**
+- **Response Parsing Bug**: Prompts 2 and 3 reveal a **server-side bug in Llama Stack**: The model IS generating responses (text visible in error logs), but Llama Stack's response parser fails with `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a compatibility issue between vLLM's response format and Llama Stack's parser.
 
-### Example Queries That Successfully Triggered Web Search
+### Issues Filed
 
-1. "What were the top 3 headlines about NVIDIA in the last 7 days? Include sources."
-2. "What is the latest stable release of vLLM and its release date? Cite sources."
-3. "What is the most recent U.S. CPI (inflation) release and its month-over-month value? Cite sources."
+Based on testing in this session, the following issues were filed with Llama Stack:
 
-### Assessment of Search Result Quality
+- **[Issue #4807](https://github.com/llamastack/llama-stack/issues/4807)**: Response Parsing Error with vLLM - Some responses fail to parse correctly, resulting in empty `output_text` despite successful search calls.
+- **[Issue #4781](https://github.com/llamastack/llama-stack/issues/4781)**: Unsupported tool call handling - Models may hallucinate non-existent tools, causing 500 errors.
 
-While web search tool calls failed in these tests (server-side issue), the models demonstrated:
-- Correct tool selection behavior (triggering web_search when needed)
-- Graceful error handling (acknowledging failures and providing alternative guidance)
-- Ability to generate helpful responses even without search results
-- Proper citation formatting when information is available
-
-## Model Comparison: GPT-OSS-20b vs GPT-OSS-120b
-
-### Response Length and Detail
-
-| Aspect | GPT-OSS-20b | GPT-OSS-120b |
-|--------|-------------|--------------|
-| **Average Response Length** | ~540 chars (concise) | ~1,406 chars (detailed) |
-| **Prompt 1 Length** | 627 chars | 2,809 chars (4.5x longer) |
-| **Prompt 2 Length** | 595 chars | 731 chars (1.2x longer) |
-| **Prompt 3 Length** | 398 chars | 677 chars (1.7x longer) |
-
-### Response Style and Structure
-
-**GPT-OSS-20b:**
-- Direct, concise responses
-- Simple formatting (basic tables, bullet points)
-- Focuses on essential information
-- Quick acknowledgment of limitations
-
-**GPT-OSS-120b:**
-- Comprehensive, structured responses
-- Rich formatting (detailed tables, organized sections)
-- Provides extensive context and guidance
-- More thorough explanations and alternative suggestions
-
-### Specific Prompt Comparisons
-
-#### Prompt 1: NVIDIA Headlines
-- **20b**: Brief apology with simple alternative suggestions (Reuters, Bloomberg, CNBC, NVIDIA newsroom)
-- **120b**: Detailed table of 7+ sources with step-by-step instructions, plus a comprehensive list of typical headline topics (AI-chip launches, partnerships, financial results, supply-chain news, regulatory developments)
-
-#### Prompt 2: vLLM Release
-- **20b**: Single-source response (GitHub) with a simple table
-- **120b**: Multi-source response (GitHub + PyPI) with detailed source comparison table and explanation of authoritative references
-
-#### Prompt 3: CPI Release
-- **20b**: Brief bullet points with key metrics
-- **120b**: More detailed response with additional context about the release date and data source location
-
-### Tool Call Behavior
-
-| Metric | GPT-OSS-20b | GPT-OSS-120b |
-|--------|-------------|--------------|
-| **Prompt 1 Tool Calls** | 4 failed attempts | 6 failed attempts |
-| **Prompt 2 Tool Calls** | 3 failed attempts | 10 failed attempts |
-| **Persistence** | Moderate | Higher (more retry attempts) |
-
-The 120b model shows more persistence in attempting web searches, making more tool calls before giving up, which may indicate better error recovery strategies.
-
-### Token Usage
-
-| Model | Prompt 1 Tokens | Prompt 2 Tokens | Efficiency |
-|-------|----------------|-----------------|------------|
-| **20b** | 2,445 total (1,419 input, 1,026 output) | ~1,000 total | More token-efficient |
-| **120b** | 3,915 total (2,626 input, 1,289 output) | ~1,200 total | Higher token usage for richer responses |
-
-### Key Takeaways
-
-1. **Use Case Selection**:
-   - **20b**: Better for quick, concise answers when brevity is important
-   - **120b**: Better for comprehensive responses requiring detailed explanations and context
-
-2. **Error Handling**: Both models handle tool failures gracefully, but 120b provides more extensive alternative guidance
-
-3. **Information Density**: 120b provides significantly more information per response, making it better suited for complex queries requiring thorough explanations
-
-4. **Cost vs. Quality Trade-off**: 20b is more token-efficient, while 120b provides richer, more detailed responses at higher token cost
-
-Run output and full response JSON are recorded in the notebook output cells for each model.
-
-For future runs, update the date above and replace the results summary to reflect the latest notebook output.
+Run output and full response JSON are recorded in the notebook output cells.
