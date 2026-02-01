@@ -6,7 +6,7 @@ Manually test that GPT-OSS models can correctly trigger and use web search resul
 
 ## Test Results
 
-### 2026-01-31 Run (After BRAVE_SEARCH_API_KEY Configuration)
+### 2026-01-31 Run (GPT-OSS-20b)
 
 ✅ **GPT-OSS-20b** with **vLLM 0.11.2+rhai5**: 
 - Prompt 1: ✅ Completed with 4 search calls (all completed, 0 failed). Response status: completed. Response text: 1,192 chars.
@@ -14,6 +14,15 @@ Manually test that GPT-OSS models can correctly trigger and use web search resul
 - Prompt 3: ⚠️ Completed with 7 search calls (5 completed, 2 failed). Response status: completed. Response text: 0 chars (empty - parsing error).
 
 **Note:** After configuring `BRAVE_SEARCH_API_KEY` from `~/.profile`, web searches are executing successfully. Total: 11 searches completed, 3 failed. Prompt 1 generated a full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to a server-side parsing error: `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a Llama Stack bug where the response parser fails to handle certain vLLM response formats, even though the model successfully generates the response text.
+
+### 2026-02-01 Run (GPT-OSS-120b)
+
+✅ **GPT-OSS-120b** with **vLLM 0.11.2+rhai5** (max_tool_calls=15, max_infer_iters=20): 
+- Prompt 1: ✅ Completed with 15 search calls (all completed, 0 failed). Response status: completed. Response text: 2,301 chars.
+- Prompt 2: ⚠️ Completed with 15 search calls (14 completed, 1 failed). Response status: completed. Response text: 881 chars. **Note:** Response contains incorrect date information (claimed vLLM v0.15.0 released "29 January 2024" - likely model hallucination).
+- Prompt 3: ✅ Completed with 15 search calls (all completed, 0 failed). Response status: completed. Response text: 845 chars.
+
+**Note:** Prompts 1 and 3 completed successfully with full response text. Prompt 2 generated a response but contains factually incorrect information about the vLLM release date (model issue, not parsing issue). The `max_tool_calls=15` configuration works well, leaving sufficient iterations for final message generation. Full response JSON metadata with complete output structure and text is available in the notebook for all prompts.
 
 ## Setup
 
@@ -27,12 +36,14 @@ Manually test that GPT-OSS models can correctly trigger and use web search resul
 | Model | vLLM Version |
 |------|---------------|
 | GPT-OSS-20b | 0.11.2+rhai5 |
+| GPT-OSS-120b | 0.11.2+rhai5 |
 
 ## Notebooks
 
 | Notebook | Model | vLLM Version |
 |----------|-------|--------------|
 | [`GPT-OSS-20b_with_vLLM_0.11.2+rhai5.ipynb`](./GPT-OSS-20b_with_vLLM_0.11.2+rhai5.ipynb) | GPT-OSS-20b | 0.11.2+rhai5 |
+| [`GPT-OSS-120b_with_vLLM_0.11.2+rhai5.ipynb`](./GPT-OSS-120b_with_vLLM_0.11.2+rhai5.ipynb) | GPT-OSS-120b | 0.11.2+rhai5 |
 
 ## Test Scenarios (Prompts)
 
@@ -62,15 +73,21 @@ print(response.output_text)
 
 ## Results Summary
 
-### 2026-01-31 Run (After BRAVE_SEARCH_API_KEY Configuration)
+### 2026-01-31 Run (GPT-OSS-20b)
 
 | Model | vLLM Version | Web Search Triggered | Result Quality | Notes |
 |------|---------------|----------------------|----------------|-------|
 | GPT-OSS-20b | 0.11.2+rhai5 | ✅ | ⚠️ Partial | All 3 prompts completed with web search calls executing. Total: 11 searches completed, 3 failed. Prompt 1 generated full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to Llama Stack parsing error (`RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`). The model IS generating responses (visible in error logs), but Llama Stack's parser fails to handle certain vLLM response formats. Brave Search API key is working and web search integration is functional. |
 
+### 2026-02-01 Run (GPT-OSS-120b)
+
+| Model | vLLM Version | Web Search Triggered | Result Quality | Notes |
+|------|---------------|----------------------|----------------|-------|
+| GPT-OSS-120b | 0.11.2+rhai5 | ✅ | ⚠️ Partial | Prompts 1 and 3 completed successfully with full response text. Prompt 2 generated response (881 chars) but contains incorrect date information (model hallucination - claimed vLLM v0.15.0 released "29 January 2024"). Prompt 1: 2,301 chars (15 searches), Prompt 2: 881 chars (14 completed, 1 failed), Prompt 3: 845 chars (15 searches). Total: 44 searches completed, 1 failed. Using `max_tool_calls=15` and `max_infer_iters=20` provides good balance. Full JSON metadata with complete response structure and text available in notebook. |
+
 ## Analysis
 
-### Key Findings (2026-01-31 - After API Key Configuration)
+### Key Findings (2026-01-31 - GPT-OSS-20b)
 
 - **API Key Configuration**: After sourcing `~/.profile` to load `BRAVE_SEARCH_API_KEY`, web searches are now executing successfully.
 - **Search Execution**: Web search calls are completing successfully (11 completed, 3 failed out of 14 total).
@@ -79,6 +96,17 @@ print(response.output_text)
   - Prompt 2: Empty response (0 chars) despite 2 successful searches - **Llama Stack parsing error**
   - Prompt 3: Empty response (0 chars) despite 5 successful searches - **Llama Stack parsing error**
 - **Response Parsing Bug**: Prompts 2 and 3 reveal a **server-side bug in Llama Stack**: The model IS generating responses (text visible in error logs), but Llama Stack's response parser fails with `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a compatibility issue between vLLM's response format and Llama Stack's parser.
+
+### Key Findings (2026-02-01 - GPT-OSS-120b)
+
+- **Configuration**: Using `max_tool_calls=15` and `max_infer_iters=20` provides good balance, leaving sufficient iterations for final message generation.
+- **Test Results**: 
+  - Prompt 1: 2,301 chars with 15 successful searches - ✅ Full response with accurate information
+  - Prompt 2: 881 chars with 14 successful searches (1 failed) - ⚠️ **Response contains incorrect date information**: Model claimed vLLM v0.15.0 was released "29 January 2024", which appears to be incorrect. This is a **model hallucination issue**, not a parsing issue (Llama Stack parsed the response correctly).
+  - Prompt 3: 845 chars with 15 successful searches - ✅ Full response with accurate information
+- **Search Execution**: Total of 44 searches completed, 1 failed. Some "Tool execution failed" messages appear in logs, but the model retries with different queries and eventually succeeds.
+- **Model Accuracy Issue**: Prompt 2 demonstrates that while the model can successfully use web search and generate responses, it may still produce factually incorrect information. This highlights the importance of fact-checking model outputs, especially for time-sensitive information like release dates.
+- **Full Metadata**: Complete JSON metadata with response text is available in the notebook for all prompts.
 
 ### Issues Filed
 
