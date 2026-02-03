@@ -65,19 +65,19 @@ Each notebook:
 
 **Response:** The uploaded document (reference.txt) contains the following information about Hamid Moghani and his work context:
 - He is a Red Hat Engineer who works in the Agentic and MCP team.
-- He is currently testing llama stack tools with GPT‑OSS models on VLLM...
+- He is currently testing llama stack tools with GPT‑OSS models on vLLM...
 
 ### Prompt 2
 **Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
 
 **Response:** Key points from the uploaded documents:
 - Hamid Moghani is a Red Hat Engineer in the Agentic and MCP team.
-- He is currently focused on manually testing Llama‑Stack tools that use GPT‑OSS models running on VLLM...
+- He is currently focused on manually testing Llama‑Stack tools that use GPT‑OSS models running on vLLM...
 
 ### Prompt 3
 **Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
 
-**Response:** The documents focus on Hamid Moghani's role as a Red Hat engineer on the Agentic and MCP teams, his current work manually testing llama‑stack tools with GPT‑OSS models on VLLM, and his collaboration with Mike to build a test strategy and test‑automation framework...
+**Response:** The documents focus on Hamid Moghani's role as a Red Hat engineer on the Agentic and MCP teams, his current work manually testing llama‑stack tools with GPT‑OSS models on vLLM, and his collaboration with Mike to build a test strategy and test‑automation framework...
 
 ## Analysis
 
