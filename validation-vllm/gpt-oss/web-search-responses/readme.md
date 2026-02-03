@@ -13,7 +13,7 @@ Manually test that GPT-OSS models can correctly trigger and use web search resul
 - Prompt 2: ⚠️ Completed with 3 search calls (2 completed, 1 failed). Response status: completed. Response text: 0 chars (empty - parsing error).
 - Prompt 3: ⚠️ Completed with 7 search calls (5 completed, 2 failed). Response status: completed. Response text: 0 chars (empty - parsing error).
 
-**Note:** After configuring `BRAVE_SEARCH_API_KEY` from `~/.profile`, web searches are executing successfully. Total: 11 searches completed, 3 failed. Prompt 1 generated a full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to a server-side parsing error: `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a Llama Stack bug where the response parser fails to handle certain vLLM response formats, even though the model successfully generates the response text.
+**Note:** After configuring `BRAVE_SEARCH_API_KEY` from `~/.profile`, web searches are executing successfully. Total: 11 searches completed, 3 failed. Prompt 1 generated a full response (1,192 chars), but Prompts 2 and 3 returned empty responses due to a server-side parsing error: `RuntimeError: OpenAI response failed: unexpected tokens remaining in message header`. This is a Llama Stack bug where the response parser fails to handle certain vLLM response formats, even though the model successfully generates the response text. (see https://github.com/llamastack/llama-stack/issues/4807)
 
 ### 2026-02-01 Run (GPT-OSS-120b)
 
