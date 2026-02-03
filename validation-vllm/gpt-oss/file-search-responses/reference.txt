@@ -1,4 +1,4 @@
-Hamid Moghani is a Red Hat Engineer who works in Agentic and MCP team. 
-He is currently working on manually testing llama stack tools with GPT-OSS models on VLLM.
-His manager is Justin and teammates are Bill, Jaideep, Emilio, Akanksha, Khaled, Mike, Shabana, Gordon, Nehanth, and Robin.
-Mike and Hamid are planning to build a Test Strategy and Test Automation framework for llama-stack responses API.
+Silas Vance is an Arcturus Systems Engineer who works in the Nexus and NCP team.
+He is currently working on manually testing modular stack tools with open-source models on a high-performance inference engine.
+His manager is Alaric and teammates are Bastien, Jace, Elian, Amara, Kaelen, Merrick, Seraphina, Garek, Nolan, and Rina.
+Merrick and Silas are planning to build a Test Strategy and Test Automation framework for the modular-stack responses API.
