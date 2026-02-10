@@ -98,7 +98,7 @@ We ran all 20 log message examples through both the MLflow native and OTel noteb
 
 ### What We Found
 
-Both approaches produce **functionally equivalent results** — the Agent-as-a-Judge evaluations return similar (not identical) ratings and rationale across both tracing backends. Results are not perfectly identical due to LLM non-determinism, but the overall quality and patterns are consistent. The agents themselves are identical — only the instrumentation layer differs.
+Both approaches produce **functionally equivalent results** — the Agent-as-a-Judge evaluations return similar (not identical) ratings and rationale across both tracing backends. Results are not perfectly identical perhaps due to LLM non-determinism, but the overall quality and patterns are consistent.
 
 
 ### UI Differences
