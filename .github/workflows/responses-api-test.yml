@@ -154,7 +154,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
         with:
-          python-version: 3.12
+          python-version: "3.13"
           version: 0.7.6
 
       - name: Run responses API tests from opendatahub-tests
