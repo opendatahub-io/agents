@@ -67,23 +67,51 @@ else
     pip install pytest
 fi
 
+# Query available models from the server
+echo
+echo "=== Querying Available Models ==="
+AVAILABLE_MODELS=$(curl -s "$LLAMA_STACK_BASE_URL/v1/models" | python -c "import sys, json; models = json.load(sys.stdin); print('\n'.join([m['id'] for m in models.get('data', [])]))" 2>/dev/null || echo "")
+
+if [ -n "$AVAILABLE_MODELS" ]; then
+    echo "Available models on server:"
+    echo "$AVAILABLE_MODELS"
+
+    # Find the first LLM model (not embedding)
+    TEXT_MODEL=$(echo "$AVAILABLE_MODELS" | grep -v -i "embedding" | head -1)
+
+    # Find embedding model
+    EMBED_MODEL=$(echo "$AVAILABLE_MODELS" | grep -i "embedding" | head -1)
+
+    echo
+    echo "Selected for testing:"
+    echo "  Text model: ${TEXT_MODEL:-<none found>}"
+    echo "  Embedding model: ${EMBED_MODEL:-<none found>}"
+else
+    echo "Could not query models from server, using defaults"
+    TEXT_MODEL="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}"
+    EMBED_MODEL="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}"
+fi
+
 # Run pytest with proper configuration
 echo
 echo "=== Running Responses API Tests ==="
 echo "Test directory: $RESPONSES_TEST_DIR"
 echo "Stack URL: $LLAMA_STACK_BASE_URL"
-echo "Text model: ${VLLM_INFERENCE_MODEL:-not set}"
-echo "Embedding model: ${EMBEDDING_MODEL:-not set}"
 echo
 
 # Run tests in LIVE mode (actually call the API, don't use recordings)
 # Configure the stack to point to our running server
-python -m pytest -v -s \
-    --stack-config="$LLAMA_STACK_BASE_URL" \
-    --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
-    --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
-    --inference-mode=live \
-    "$RESPONSES_TEST_DIR"
+if [ -n "$TEXT_MODEL" ]; then
+    python -m pytest -v -s \
+        --stack-config="$LLAMA_STACK_BASE_URL" \
+        --text-model="$TEXT_MODEL" \
+        --embedding-model="$EMBED_MODEL" \
+        --inference-mode=live \
+        "$RESPONSES_TEST_DIR"
+else
+    echo "✗ Error: No text model found on server"
+    exit 1
+fi
 
 echo
 echo "✓ Tests completed successfully!"
