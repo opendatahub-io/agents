@@ -56,15 +56,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Clone llama-stack-distribution
+        run: |
+          git clone https://github.com/opendatahub-io/llama-stack-distribution.git /tmp/llama-stack-distribution
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Build image for testing
+      - name: Build llama-stack image
         id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
-          context: .
-          file: distribution/Containerfile
+          context: /tmp/llama-stack-distribution
+          file: /tmp/llama-stack-distribution/distribution/Containerfile
           platforms: linux/amd64
           push: false
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
