@@ -16,6 +16,7 @@ on:
     branches:
       - main
       - rhoai-v*
+      - responses_api_test_workflow
 
   # Allow manual triggering
   workflow_dispatch:
