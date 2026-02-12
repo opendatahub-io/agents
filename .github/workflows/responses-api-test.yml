@@ -1,0 +1,206 @@
+name: Responses API Testing
+
+on:
+  pull_request:
+    branches:
+      - main
+      - rhoai-v*
+    types:
+      - opened
+      - synchronize
+    paths:
+      - '.github/workflows/responses-api-test.yml'
+      - 'distribution/**'
+      - 'tests/**'
+  push:
+    branches:
+      - main
+      - rhoai-v*
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: quay.io/opendatahub/llama-stack
+  VLLM_INFERENCE_MODEL: openai/gpt-oss-20b
+  EMBEDDING_MODEL: sentence-transformers/ibm-granite/granite-embedding-125m-english
+
+jobs:
+  test-responses-api:
+    runs-on: ubuntu-latest
+    env:
+      VERTEX_AI_PROJECT: ${{ secrets.VERTEX_AI_PROJECT }}
+      VERTEX_AI_LOCATION: us-central1
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      VLLM_URL: ${{ secrets.VLLM_URL }}
+      VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: llamastack
+      POSTGRES_USER: llamastack
+      POSTGRES_PASSWORD: llamastack
+      ENABLE_SENTENCE_TRANSFORMERS: True
+      EMBEDDING_PROVIDER: sentence-transformers
+      TRUSTYAI_LMEVAL_USE_K8S: False
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build image for testing
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: distribution/Containerfile
+          platforms: linux/amd64
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Unset cloud provider credentials for fork PRs
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: |
+          echo "Unsetting cloud provider credentials for fork PR (secrets not available)"
+          echo "VERTEX_AI_PROJECT=" >> "$GITHUB_ENV"
+          echo "OPENAI_API_KEY=" >> "$GITHUB_ENV"
+          echo "VLLM_URL=" >> "$GITHUB_ENV"
+          echo "VLLM_API_KEY=" >> "$GITHUB_ENV"
+
+      - name: Authenticate to Google Cloud (Vertex)
+        if: github.event_name != 'workflow_dispatch' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ env.VERTEX_AI_PROJECT }}
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Setup PostgreSQL for llama-stack
+        id: postgres
+        run: |
+          docker run -d \
+            --name postgres \
+            -e POSTGRES_DB=${{ env.POSTGRES_DB }} \
+            -e POSTGRES_USER=${{ env.POSTGRES_USER }} \
+            -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
+            -p ${{ env.POSTGRES_PORT }}:5432 \
+            postgres:15-alpine
+
+          # Wait for PostgreSQL to be ready
+          for i in {1..30}; do
+            if docker exec postgres pg_isready -U ${{ env.POSTGRES_USER }} > /dev/null 2>&1; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "PostgreSQL failed to start"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Start llama-stack container
+        shell: bash
+        run: |
+          docker_args=(
+            -d
+            --pull=never
+            --net=host
+            -p 8321:8321
+            --env "INFERENCE_MODEL=$VLLM_INFERENCE_MODEL"
+            --env "EMBEDDING_MODEL=$EMBEDDING_MODEL"
+            --env "VLLM_URL=$VLLM_URL"
+            --env "ENABLE_SENTENCE_TRANSFORMERS=True"
+            --env "EMBEDDING_PROVIDER=sentence-transformers"
+            --env "TRUSTYAI_LMEVAL_USE_K8S=False"
+            --env "POSTGRES_HOST=$POSTGRES_HOST"
+            --env "POSTGRES_PORT=$POSTGRES_PORT"
+            --env "POSTGRES_DB=$POSTGRES_DB"
+            --env "POSTGRES_USER=$POSTGRES_USER"
+            --env "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+          )
+
+          # Add VLLM API key if set
+          if [ -n "${VLLM_API_KEY:-}" ]; then
+            docker_args+=(--env "VLLM_API_KEY=$VLLM_API_KEY")
+          fi
+
+          # Only add Vertex AI configuration if VERTEX_AI_PROJECT is set
+          if [ -n "${VERTEX_AI_PROJECT:-}" ]; then
+            docker_args+=(
+              --env "VERTEX_AI_PROJECT=$VERTEX_AI_PROJECT"
+              --env "VERTEX_AI_LOCATION=$VERTEX_AI_LOCATION"
+              --env "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-credentials"
+            )
+            if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+              docker_args+=(--volume "$GOOGLE_APPLICATION_CREDENTIALS:/run/secrets/gcp-credentials:ro")
+            fi
+          fi
+
+          # Only add OpenAI configuration if OPENAI_API_KEY is set
+          if [ -n "${OPENAI_API_KEY:-}" ]; then
+            docker_args+=(--env "OPENAI_API_KEY=$OPENAI_API_KEY")
+          fi
+
+          docker_args+=(--name llama-stack-responses-test "$IMAGE_NAME:$GITHUB_SHA")
+
+          docker run "${docker_args[@]}"
+          echo "Started Llama Stack container for responses API testing..."
+
+          # Wait for llama stack to be ready
+          echo "Waiting for Llama Stack server..."
+          for i in {1..60}; do
+            echo "Attempt $i to connect to Llama Stack..."
+            resp=$(curl -fsS http://127.0.0.1:8321/v1/health || echo "failed")
+            if [ "$resp" == '{"status":"OK"}' ]; then
+              echo "Llama Stack server is up!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Llama Stack server failed to start :("
+              docker logs llama-stack-responses-test || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+        with:
+          python-version: 3.12
+          version: 0.7.6
+
+      - name: Run responses API tests from opendatahub-tests
+        shell: bash
+        env:
+          LLAMA_STACK_BASE_URL: http://127.0.0.1:8321
+          VLLM_INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
+          EMBEDDING_MODEL: ${{ env.EMBEDDING_MODEL }}
+        run: ./tests/run_responses_api_tests.sh
+
+      - name: Gather logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Llama Stack Container logs ==="
+          docker logs llama-stack-responses-test || true
+          echo "=== PostgreSQL logs ==="
+          docker logs postgres || true
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f llama-stack-responses-test postgres || true
