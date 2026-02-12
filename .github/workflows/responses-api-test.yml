@@ -106,6 +106,11 @@ jobs:
       - name: Start llama-stack container
         shell: bash
         run: |
+          echo "=== Configuration ==="
+          echo "VLLM_URL: ${VLLM_URL:-<not set>}"
+          echo "VLLM_INFERENCE_MODEL: $VLLM_INFERENCE_MODEL"
+          echo "EMBEDDING_MODEL: $EMBEDDING_MODEL"
+
           docker_args=(
             -d
             --pull=never
@@ -127,6 +132,9 @@ jobs:
           # Add VLLM API key if set
           if [ -n "${VLLM_API_KEY:-}" ]; then
             docker_args+=(--env "VLLM_API_KEY=$VLLM_API_KEY")
+            echo "VLLM_API_KEY is set"
+          else
+            echo "WARNING: VLLM_API_KEY is not set!"
           fi
 
           docker_args+=(--name llama-stack-responses-test "$IMAGE_NAME:$GITHUB_SHA")
@@ -151,13 +159,23 @@ jobs:
             sleep 1
           done
 
+      - name: Debug llama-stack configuration
+        run: |
+          echo "=== Checking llama-stack models and providers ==="
+          curl -s http://127.0.0.1:8321/v1/models | jq '.' || echo "Failed to query models"
+          curl -s http://127.0.0.1:8321/v1/providers | jq '.' || echo "Failed to query providers"
+
+          echo ""
+          echo "=== Checking llama-stack environment ==="
+          docker exec llama-stack-responses-test printenv | grep -E "VLLM|INFERENCE|EMBEDDING" || true
+
       - name: Install uv
         uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
         with:
           python-version: "3.13"
           version: 0.7.6
 
-      - name: Run responses API tests from opendatahub-tests
+      - name: Run responses API tests from upstream llama-stack
         shell: bash
         env:
           LLAMA_STACK_BASE_URL: http://127.0.0.1:8321
