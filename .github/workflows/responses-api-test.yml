@@ -106,7 +106,11 @@ jobs:
           version: 2
           distro_name: test-distro
           apis:
+            - agents
+            - files
             - inference
+            - tool_runtime
+            - vector_io
           providers:
             inference:
               - provider_id: vllm
@@ -118,6 +122,39 @@ jobs:
                   tls_verify: true
               - provider_id: sentence-transformers
                 provider_type: inline::sentence-transformers
+                config: {}
+            vector_io:
+              - provider_id: faiss
+                provider_type: inline::faiss
+                config:
+                  persistence:
+                    namespace: vector_io::faiss
+                    backend: kv_default
+            files:
+              - provider_id: localfs
+                provider_type: inline::localfs
+                config:
+                  storage_dir: /tmp/llama-stack-files
+                  metadata_store:
+                    table_name: files_metadata
+                    backend: sql_default
+            agents:
+              - provider_id: meta-reference
+                provider_type: inline::meta-reference
+                config:
+                  max_infer_iters: 20
+                  persistence:
+                    agent_state:
+                      namespace: agents
+                      backend: kv_default
+                    responses:
+                      table_name: responses
+                      backend: sql_default
+                      max_write_queue_size: 10000
+                      num_writers: 4
+            tool_runtime:
+              - provider_id: rag-runtime
+                provider_type: inline::rag-runtime
                 config: {}
           storage:
             backends:
@@ -144,6 +181,12 @@ jobs:
                 backend: sql_default
                 max_write_queue_size: 10000
                 num_writers: 4
+              conversations:
+                table_name: openai_conversations
+                backend: sql_default
+              prompts:
+                namespace: prompts
+                backend: kv_default
           registered_resources:
             models:
               - model_id: ${{ env.VLLM_INFERENCE_MODEL }}
@@ -155,9 +198,17 @@ jobs:
                 provider_model_id: ${{ env.EMBEDDING_MODEL }}
                 model_type: embedding
                 metadata:
-                  embedding_dimension: 384
+                  embedding_dimension: 768
+            tool_groups:
+              - toolgroup_id: builtin::rag
+                provider_id: rag-runtime
           server:
             port: 8321
+          vector_stores:
+            default_provider_id: faiss
+            default_embedding_model:
+              provider_id: sentence-transformers
+              model_id: ${{ env.EMBEDDING_MODEL }}
           EOF
 
           echo "Generated config:"
