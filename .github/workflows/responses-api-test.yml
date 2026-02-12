@@ -33,12 +33,13 @@ env:
 jobs:
   test-responses-api:
     runs-on: ubuntu-latest
+    environment: Tests
     env:
       VERTEX_AI_PROJECT: ${{ secrets.VERTEX_AI_PROJECT }}
       VERTEX_AI_LOCATION: us-central1
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      VLLM_URL: ${{ secrets.VLLM_URL }}
+      VLLM_URL: ${{ vars.VLLM_URL }}
       VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
