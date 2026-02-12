@@ -10,7 +10,6 @@ on:
       - synchronize
     paths:
       - '.github/workflows/responses-api-test.yml'
-      - 'distribution/**'
       - 'tests/**'
   push:
     branches:
@@ -26,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: quay.io/opendatahub/llama-stack
+  IMAGE_NAME: llama-stack-local
   VLLM_INFERENCE_MODEL: openai/gpt-oss-20b
   EMBEDDING_MODEL: sentence-transformers/ibm-granite/granite-embedding-125m-english
 
@@ -42,9 +41,6 @@ jobs:
       POSTGRES_DB: llamastack
       POSTGRES_USER: llamastack
       POSTGRES_PASSWORD: llamastack
-      ENABLE_SENTENCE_TRANSFORMERS: True
-      EMBEDDING_PROVIDER: sentence-transformers
-      TRUSTYAI_LMEVAL_USE_K8S: False
     permissions:
       contents: read
 
@@ -52,9 +48,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Clone llama-stack-distribution
+      - name: Clone llama-stack
         run: |
-          git clone https://github.com/opendatahub-io/llama-stack-distribution.git /tmp/llama-stack-distribution
+          git clone https://github.com/meta-llama/llama-stack.git /tmp/llama-stack
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
@@ -63,8 +59,8 @@ jobs:
         id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
-          context: /tmp/llama-stack-distribution
-          file: /tmp/llama-stack-distribution/distribution/Containerfile
+          context: /tmp/llama-stack
+          file: /tmp/llama-stack/Dockerfile
           platforms: linux/amd64
           push: false
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -79,8 +75,7 @@ jobs:
           echo "VLLM_URL=" >> "$GITHUB_ENV"
           echo "VLLM_API_KEY=" >> "$GITHUB_ENV"
 
-      - name: Setup PostgreSQL for llama-stack
-        id: postgres
+      - name: Setup PostgreSQL
         run: |
           docker run -d \
             --name postgres \
@@ -103,43 +98,96 @@ jobs:
             sleep 1
           done
 
+      - name: Generate llama-stack config
+        run: |
+          mkdir -p /tmp/llama-stack-config
+
+          cat > /tmp/llama-stack-config/config.yaml <<'EOF'
+          version: 2
+          distro_name: test-distro
+          apis:
+            - inference
+          providers:
+            inference:
+              - provider_id: vllm
+                provider_type: remote::vllm
+                config:
+                  base_url: ${env.VLLM_URL:=}
+                  max_tokens: 4096
+                  api_token: ${env.VLLM_API_KEY:=}
+                  tls_verify: true
+              - provider_id: sentence-transformers
+                provider_type: inline::sentence-transformers
+                config: {}
+          storage:
+            backends:
+              kv_default:
+                type: kv_postgres
+                host: ${env.POSTGRES_HOST:=localhost}
+                port: ${env.POSTGRES_PORT:=5432}
+                database: ${env.POSTGRES_DB:=llamastack}
+                user: ${env.POSTGRES_USER:=llamastack}
+                password: ${env.POSTGRES_PASSWORD:=llamastack}
+              sql_default:
+                type: sql_postgres
+                host: ${env.POSTGRES_HOST:=localhost}
+                port: ${env.POSTGRES_PORT:=5432}
+                database: ${env.POSTGRES_DB:=llamastack}
+                user: ${env.POSTGRES_USER:=llamastack}
+                password: ${env.POSTGRES_PASSWORD:=llamastack}
+            stores:
+              metadata:
+                namespace: registry
+                backend: kv_default
+              inference:
+                table_name: inference_store
+                backend: sql_default
+                max_write_queue_size: 10000
+                num_writers: 4
+          registered_resources:
+            models:
+              - model_id: ${{ env.VLLM_INFERENCE_MODEL }}
+                provider_id: vllm
+                provider_model_id: ${{ env.VLLM_INFERENCE_MODEL }}
+                model_type: llm
+              - model_id: ${{ env.EMBEDDING_MODEL }}
+                provider_id: sentence-transformers
+                provider_model_id: ${{ env.EMBEDDING_MODEL }}
+                model_type: embedding
+                metadata:
+                  embedding_dimension: 384
+          server:
+            port: 8321
+          EOF
+
+          echo "Generated config:"
+          cat /tmp/llama-stack-config/config.yaml
+
       - name: Start llama-stack container
         shell: bash
         run: |
           echo "=== Configuration ==="
           echo "VLLM_URL: ${VLLM_URL:-<not set>}"
+          echo "VLLM_API_KEY: ${VLLM_API_KEY:+***set***}"
           echo "VLLM_INFERENCE_MODEL: $VLLM_INFERENCE_MODEL"
           echo "EMBEDDING_MODEL: $EMBEDDING_MODEL"
 
-          docker_args=(
-            -d
-            --pull=never
-            --net=host
-            -p 8321:8321
-            --env "INFERENCE_MODEL=$VLLM_INFERENCE_MODEL"
-            --env "EMBEDDING_MODEL=$EMBEDDING_MODEL"
-            --env "VLLM_URL=$VLLM_URL"
-            --env "ENABLE_SENTENCE_TRANSFORMERS=True"
-            --env "EMBEDDING_PROVIDER=sentence-transformers"
-            --env "TRUSTYAI_LMEVAL_USE_K8S=False"
-            --env "POSTGRES_HOST=$POSTGRES_HOST"
-            --env "POSTGRES_PORT=$POSTGRES_PORT"
-            --env "POSTGRES_DB=$POSTGRES_DB"
-            --env "POSTGRES_USER=$POSTGRES_USER"
-            --env "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
-          )
+          docker run -d \
+            --pull=never \
+            --net=host \
+            -p 8321:8321 \
+            -v /tmp/llama-stack-config:/config \
+            --env "VLLM_URL=$VLLM_URL" \
+            --env "VLLM_API_KEY=$VLLM_API_KEY" \
+            --env "POSTGRES_HOST=$POSTGRES_HOST" \
+            --env "POSTGRES_PORT=$POSTGRES_PORT" \
+            --env "POSTGRES_DB=$POSTGRES_DB" \
+            --env "POSTGRES_USER=$POSTGRES_USER" \
+            --env "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
+            --name llama-stack-responses-test \
+            "$IMAGE_NAME:$GITHUB_SHA" \
+            --yaml-config /config/config.yaml
 
-          # Add VLLM API key if set
-          if [ -n "${VLLM_API_KEY:-}" ]; then
-            docker_args+=(--env "VLLM_API_KEY=$VLLM_API_KEY")
-            echo "VLLM_API_KEY is set"
-          else
-            echo "WARNING: VLLM_API_KEY is not set!"
-          fi
-
-          docker_args+=(--name llama-stack-responses-test "$IMAGE_NAME:$GITHUB_SHA")
-
-          docker run "${docker_args[@]}"
           echo "Started Llama Stack container for responses API testing..."
 
           # Wait for llama stack to be ready
@@ -164,10 +212,6 @@ jobs:
           echo "=== Checking llama-stack models and providers ==="
           curl -s http://127.0.0.1:8321/v1/models | jq '.' || echo "Failed to query models"
           curl -s http://127.0.0.1:8321/v1/providers | jq '.' || echo "Failed to query providers"
-
-          echo ""
-          echo "=== Checking llama-stack environment ==="
-          docker exec llama-stack-responses-test printenv | grep -E "VLLM|INFERENCE|EMBEDDING" || true
 
       - name: Install uv
         uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
