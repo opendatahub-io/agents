@@ -60,10 +60,10 @@ if command -v uv &> /dev/null; then
     # Create and use a venv for the tests
     uv venv .venv
     source .venv/bin/activate
-    uv pip install -e .
+    uv pip install -e ".[client]"
     uv pip install pytest pytest-asyncio python-dotenv
 else
-    pip install -e ".[dev]"
+    pip install -e ".[dev,client]"
     pip install pytest
 fi
 
