@@ -3,15 +3,15 @@
 set -euo pipefail
 
 # Configuration
-WORK_DIR="/tmp/opendatahub-tests"
-OPENDATAHUB_TESTS_REPO="${OPENDATAHUB_TESTS_REPO:-https://github.com/opendatahub-io/opendatahub-tests.git}"
-OPENDATAHUB_TESTS_BRANCH="${OPENDATAHUB_TESTS_BRANCH:-main}"
+WORK_DIR="/tmp/llama-stack"
+LLAMA_STACK_REPO="${LLAMA_STACK_REPO:-https://github.com/meta-llama/llama-stack.git}"
+LLAMA_STACK_BRANCH="${LLAMA_STACK_BRANCH:-main}"
 LLAMA_STACK_BASE_URL="${LLAMA_STACK_BASE_URL:-http://127.0.0.1:8321}"
-RESPONSES_TEST_DIR="tests/llama_stack/responses"
+RESPONSES_TEST_DIR="tests/integration/responses"
 
 echo "=== Responses API Test Setup ==="
-echo "Repository: $OPENDATAHUB_TESTS_REPO"
-echo "Branch: $OPENDATAHUB_TESTS_BRANCH"
+echo "Repository: $LLAMA_STACK_REPO"
+echo "Branch: $LLAMA_STACK_BRANCH"
 echo "Llama Stack URL: $LLAMA_STACK_BASE_URL"
 echo
 
@@ -29,52 +29,68 @@ for i in {1..30}; do
     sleep 1
 done
 
-# Clone or update opendatahub-tests repository
+# Clone or update llama-stack repository
 if [ -d "$WORK_DIR/.git" ]; then
     echo "Updating existing repository..."
     cd "$WORK_DIR"
     git fetch origin
-    git checkout "$OPENDATAHUB_TESTS_BRANCH"
-    git pull origin "$OPENDATAHUB_TESTS_BRANCH"
+    git checkout "$LLAMA_STACK_BRANCH"
+    git pull origin "$LLAMA_STACK_BRANCH"
 else
     echo "Cloning repository..."
     rm -rf "$WORK_DIR"
-    git clone --branch "$OPENDATAHUB_TESTS_BRANCH" "$OPENDATAHUB_TESTS_REPO" "$WORK_DIR"
+    git clone --branch "$LLAMA_STACK_BRANCH" "$LLAMA_STACK_REPO" "$WORK_DIR"
     cd "$WORK_DIR"
 fi
 
 # Verify test directory exists
 if [ ! -d "$RESPONSES_TEST_DIR" ]; then
     echo "✗ Error: Test directory not found at $RESPONSES_TEST_DIR"
-    ls -la tests/llama_stack/ 2>/dev/null || echo "tests/llama_stack directory not found"
+    echo "Searching for test files..."
+    find . -type f -name "test*.py" -path "*/responses/*" 2>/dev/null | head -10
     exit 1
 fi
 
 # Set environment variables for tests
-export LLAMA_STACK_BASE_URL="$LLAMA_STACK_BASE_URL"
-export LLAMA_STACK_URL="$LLAMA_STACK_BASE_URL"
-export KUBECONFIG=""
-export SKIP_K8S_SETUP="true"
-export OCP_RESOURCES_SKIP="true"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 
-# Install test dependencies
-if [ -f "requirements.txt" ]; then
-    echo "Installing dependencies..."
-    if command -v uv &> /dev/null; then
-        uv pip install -r requirements.txt
-    else
-        pip install -r requirements.txt
-    fi
+# Install llama-stack with test dependencies
+echo "Installing llama-stack with test dependencies..."
+if command -v uv &> /dev/null; then
+    # Install in system Python (managed by uv)
+    uv pip install --system -e .
+    # Also install test group
+    uv pip install --system --group test pytest
+else
+    pip install -e ".[dev]"
+    pip install pytest
 fi
 
-# Run pytest
+# Run pytest with proper configuration
 echo
 echo "=== Running Responses API Tests ==="
+echo "Test directory: $RESPONSES_TEST_DIR"
+echo "Stack URL: $LLAMA_STACK_BASE_URL"
+echo "Text model: ${VLLM_INFERENCE_MODEL:-not set}"
+echo "Embedding model: ${EMBEDDING_MODEL:-not set}"
+echo
+
+# Run tests in LIVE mode (actually call the API, don't use recordings)
+# Configure the stack to point to our running server
 if command -v uv &> /dev/null; then
-    uv run python -m pytest -v "$RESPONSES_TEST_DIR"
+    uv run --no-project python -m pytest -v -s \
+        --stack-config="$LLAMA_STACK_BASE_URL" \
+        --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
+        --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
+        --inference-mode=live \
+        "$RESPONSES_TEST_DIR"
 else
-    python -m pytest -v "$RESPONSES_TEST_DIR"
+    python -m pytest -v -s \
+        --stack-config="$LLAMA_STACK_BASE_URL" \
+        --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
+        --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
+        --inference-mode=live \
+        "$RESPONSES_TEST_DIR"
 fi
 
 echo
