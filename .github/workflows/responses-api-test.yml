@@ -185,8 +185,9 @@ jobs:
             --env "POSTGRES_USER=$POSTGRES_USER" \
             --env "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
             --name llama-stack-responses-test \
+            --entrypoint /bin/bash \
             "$IMAGE_NAME:$GITHUB_SHA" \
-            stack run /config/config.yaml
+            -c "llama stack run /config/config.yaml"
 
           echo "Started Llama Stack container for responses API testing..."
 
