@@ -57,10 +57,11 @@ export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 # Install llama-stack with test dependencies
 echo "Installing llama-stack with test dependencies..."
 if command -v uv &> /dev/null; then
-    # Install in system Python (managed by uv)
-    uv pip install --system -e .
-    # Also install test group
-    uv pip install --system --group test pytest
+    # Create and use a venv for the tests
+    uv venv .venv
+    source .venv/bin/activate
+    uv pip install -e .
+    uv pip install pytest pytest-asyncio python-dotenv
 else
     pip install -e ".[dev]"
     pip install pytest
@@ -77,21 +78,12 @@ echo
 
 # Run tests in LIVE mode (actually call the API, don't use recordings)
 # Configure the stack to point to our running server
-if command -v uv &> /dev/null; then
-    uv run --no-project python -m pytest -v -s \
-        --stack-config="$LLAMA_STACK_BASE_URL" \
-        --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
-        --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
-        --inference-mode=live \
-        "$RESPONSES_TEST_DIR"
-else
-    python -m pytest -v -s \
-        --stack-config="$LLAMA_STACK_BASE_URL" \
-        --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
-        --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
-        --inference-mode=live \
-        "$RESPONSES_TEST_DIR"
-fi
+python -m pytest -v -s \
+    --stack-config="$LLAMA_STACK_BASE_URL" \
+    --text-model="${VLLM_INFERENCE_MODEL:-openai/gpt-oss-20b}" \
+    --embedding-model="${EMBEDDING_MODEL:-sentence-transformers/ibm-granite/granite-embedding-125m-english}" \
+    --inference-mode=live \
+    "$RESPONSES_TEST_DIR"
 
 echo
 echo "✓ Tests completed successfully!"
