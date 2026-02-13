@@ -284,13 +284,16 @@ jobs:
           set -e
 
           # Extract test summary from pytest output
-          SUMMARY_LINE=$(grep -E "^(=+ .* =+|[0-9]+ passed)" /tmp/test-output.log | tail -1 || echo "")
+          # Look for "collected X items" line
+          TOTAL=$(grep -oP 'collected \K\d+(?= items?)' /tmp/test-output.log | head -1 || echo "0")
 
-          # Parse the summary
-          TOTAL=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= collected)' || echo "0")
+          # Look for final summary line
+          SUMMARY_LINE=$(grep -E "^=.*=.*in.*s.*=" /tmp/test-output.log | tail -1 || echo "")
+
+          # Parse passed/failed/errors from summary
           PASSED=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= passed)' || echo "0")
           FAILED=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= failed)' || echo "0")
-          ERRORS=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= error)' || echo "0")
+          ERRORS=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= errors?)' || echo "0")
 
           # Save for next step
           echo "TOTAL_TESTS=$TOTAL" >> "$GITHUB_ENV"
