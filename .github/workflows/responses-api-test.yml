@@ -277,7 +277,54 @@ jobs:
           LLAMA_STACK_BASE_URL: http://127.0.0.1:8321
           VLLM_INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           EMBEDDING_MODEL: ${{ env.EMBEDDING_MODEL }}
-        run: ./tests/run_responses_api_tests.sh
+        run: |
+          set +e
+          ./tests/run_responses_api_tests.sh 2>&1 | tee /tmp/test-output.log
+          TEST_EXIT_CODE=${PIPEFAIL[0]:-$?}
+          set -e
+
+          # Extract test summary from pytest output
+          SUMMARY_LINE=$(grep -E "^(=+ .* =+|[0-9]+ passed)" /tmp/test-output.log | tail -1 || echo "")
+
+          # Parse the summary
+          TOTAL=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= collected)' || echo "0")
+          PASSED=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= passed)' || echo "0")
+          FAILED=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= failed)' || echo "0")
+          ERRORS=$(echo "$SUMMARY_LINE" | grep -oP '\d+(?= error)' || echo "0")
+
+          # Save for next step
+          echo "TOTAL_TESTS=$TOTAL" >> "$GITHUB_ENV"
+          echo "PASSED_TESTS=$PASSED" >> "$GITHUB_ENV"
+          echo "FAILED_TESTS=$FAILED" >> "$GITHUB_ENV"
+          echo "ERROR_TESTS=$ERRORS" >> "$GITHUB_ENV"
+          echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> "$GITHUB_ENV"
+
+          exit $TEST_EXIT_CODE
+
+      - name: Generate test summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Responses API Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Total Tests | ${TOTAL_TESTS:-N/A} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ✅ Passed | ${PASSED_TESTS:-0} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ❌ Failed | ${FAILED_TESTS:-0} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ⚠️ Errors | ${ERROR_TESTS:-0} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${TEST_EXIT_CODE:-1}" -eq 0 ]; then
+            echo "✅ **All tests passed!**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ **Some tests failed or had errors**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Configuration" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Inference Model:** ${{ env.VLLM_INFERENCE_MODEL }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Embedding Model:** ${{ env.EMBEDDING_MODEL }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Gather logs on failure
         if: failure()
