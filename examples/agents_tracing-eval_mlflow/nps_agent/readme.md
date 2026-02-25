@@ -13,16 +13,20 @@ The agent and MCP server are based on: https://github.com/The-AI-Alliance/llama-
 
 ## Choose a Notebook
 
-Both notebooks run the same NPS agent and evaluation — pick one based on the tracing approach you want:
+The first two notebooks run the same NPS agent and evaluation — pick one based on the tracing approach you want.
+The third notebook demonstrates the same NPS agent built with LangGraph, and uses `mlflow.langchain.autolog()` for automatic tracing.
 
 | Notebook | Tracing Method | Description |
 |----------|---------------|-------------|
 | `nps_agent.ipynb` | MLflow native (`@mlflow.trace`) | Uses MLflow's built-in tracing with a local SQLite backend |
 | `nps_otel.ipynb` | OpenTelemetry (OTLP export) | Uses OTel SDK to create spans, exported to MLflow server via OTLP/HTTP |
+| `Nps_agent_langchain_autolog.ipynb` | MLflow autolog (`mlflow.langchain.autolog`) | LangGraph ReAct agent example using automatic tracing, conversation memory, and session tracking |
 
 **Option A — MLflow Native** (`nps_agent.ipynb`): Uses `@mlflow.trace` decorators and `mlflow.start_span()` to capture traces directly into a local SQLite database. No server required.
 
 **Option B — OpenTelemetry** (`nps_otel.ipynb`): Uses the OpenTelemetry SDK (`TracerProvider`, `BatchSpanProcessor`, `OTLPSpanExporter`) to create spans and export them to an MLflow server over HTTP. Requires a running MLflow server. More portable and follows the OTel standard.
+
+**Option C — LangGraph with MLflow Autolog** (`Nps_agent_langchain_autolog.ipynb`): See [LangGraph README](langgraph-README.md) for details.
 
 ## Architecture
 
@@ -53,7 +57,7 @@ User Query → LlamaStack → MCP Server → NPS API
    OPENAI_API_KEY=your_key
    ```
 
-4. **Run either notebook**
+4. **Run a notebook**
 
    **Option A — MLflow Native** (`nps_agent.ipynb`):
    Open and run all cells. Traces are saved to a local `mlflow.db` file.
@@ -64,3 +68,6 @@ User Query → LlamaStack → MCP Server → NPS API
    mlflow server --backend-store-uri sqlite:///mlflow.db --port 5001
    ```
    Then open and run all cells. View traces at http://localhost:5001.
+
+   **Option C — LangGraph** (`Nps_agent_langchain_autolog.ipynb`):
+   Open and run all cells. Traces are captured automatically via `mlflow.langchain.autolog()` and saved to a local `mlflow.db` file. See [langgraph-README.md](langgraph-README.md) for full setup and details.

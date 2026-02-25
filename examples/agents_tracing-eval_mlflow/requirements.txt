@@ -11,3 +11,6 @@ langgraph
 langchain-openai
 langchain-mcp-adapters
 pydantic
+langchain
+langchain-core
+langgraph-prebuilt
