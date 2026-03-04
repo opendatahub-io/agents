@@ -21,6 +21,7 @@ The third notebook demonstrates the same NPS agent built with LangGraph, and use
 | `nps_agent.ipynb` | MLflow native (`@mlflow.trace`) | Uses MLflow's built-in tracing with a local SQLite backend |
 | `nps_otel.ipynb` | OpenTelemetry (OTLP export) | Uses OTel SDK to create spans, exported to MLflow server via OTLP/HTTP |
 | `Nps_agent_langchain_autolog.ipynb` | MLflow autolog (`mlflow.langchain.autolog`) | LangGraph ReAct agent example using automatic tracing, conversation memory, and session tracking |
+| `nps_agent_custom_judge.ipynb` | Uses custom provider for agent-judge and traces the judge's own LLM calls |
 
 **Option A — MLflow Native** (`nps_agent.ipynb`): Uses `@mlflow.trace` decorators and `mlflow.start_span()` to capture traces directly into a local SQLite database. No server required.
 
