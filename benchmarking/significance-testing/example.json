@@ -1,0 +1,77 @@
+{
+  "config_a": "synthetic_config_a",
+  "config_b": "synthetic_config_b",
+  "accuracy": {
+    "config_a": 0.834,
+    "config_b": 0.836
+  },
+  "difference": {
+    "mean": -0.0020000000000000018,
+    "ci_95_lower": -0.04999999999999993,
+    "ci_95_upper": 0.04400000000000004
+  },
+  "significance": {
+    "bootstrap_p_value": 0.9334,
+    "scipy_permutation_p_value": 0.9954009198160368,
+    "manual_permutation_p_value": 1.0,
+    "is_significant_alpha_05": false,
+    "methods_agree": true
+  },
+  "metadata": {
+    "n_bootstrap": 10000,
+    "n_tasks": 500,
+    "n_categories": 5
+  },
+  "category_breakdown": {
+    "category_0": {
+      "accuracy_a": 0.8229166666666666,
+      "accuracy_b": 0.84375,
+      "difference": -0.02083333333333337,
+      "ci_95": [
+        -0.125,
+        0.08333333333333337
+      ],
+      "n_tasks": 96
+    },
+    "category_1": {
+      "accuracy_a": 0.7904761904761904,
+      "accuracy_b": 0.7523809523809524,
+      "difference": 0.03809523809523807,
+      "ci_95": [
+        -0.08571428571428574,
+        0.16190476190476188
+      ],
+      "n_tasks": 105
+    },
+    "category_2": {
+      "accuracy_a": 0.8333333333333334,
+      "accuracy_b": 0.8229166666666666,
+      "difference": 0.01041666666666674,
+      "ci_95": [
+        -0.10416666666666663,
+        0.11458333333333337
+      ],
+      "n_tasks": 96
+    },
+    "category_3": {
+      "accuracy_a": 0.8282828282828283,
+      "accuracy_b": 0.9090909090909091,
+      "difference": -0.08080808080808077,
+      "ci_95": [
+        -0.17171717171717182,
+        0.02020202020202022
+      ],
+      "n_tasks": 99
+    },
+    "category_4": {
+      "accuracy_a": 0.8942307692307693,
+      "accuracy_b": 0.8557692307692307,
+      "difference": 0.03846153846153855,
+      "ci_95": [
+        -0.04807692307692302,
+        0.11538461538461542
+      ],
+      "n_tasks": 104
+    }
+  }
+}
