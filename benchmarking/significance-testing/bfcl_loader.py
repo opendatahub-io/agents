@@ -47,7 +47,7 @@ def load_score_file(file_path: Path) -> tuple[list[TaskResult], dict, str, set]:
     
     # Extract category from filename (e.g., BFCL_v4_multi_turn_base_score.json)
     filename = file_path.stem
-    # Remove prefix and suffix - support both v3 and v4
+    # Remove prefix and suffix
     category = filename.replace("BFCL_v4_", "").replace("_score", "")
     
     # Remaining lines are failed tests

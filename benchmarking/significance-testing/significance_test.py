@@ -23,6 +23,7 @@ from bootstrap import (
     compute_confidence_interval,
     compute_p_value,
     scipy_paired_permutation_test,
+    paired_bootstrap,
 )
 
 
@@ -165,7 +166,7 @@ def compute_category_breakdown(
         diff = acc_a - acc_b
         
         # Quick bootstrap for this category
-        cat_bootstrap_diffs = bootstrap_accuracy_difference(
+        cat_bootstrap_diffs = paired_bootstrap(
             cat_a, cat_b, min(n_bootstrap, 1000)
         )
         ci_lower, ci_upper = compute_confidence_interval(cat_bootstrap_diffs, 0.95)
