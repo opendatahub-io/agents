@@ -4,9 +4,9 @@
 
 Manually test that GPT-OSS models can correctly perform RAG operations (file-search) through the Llama Stack Responses API. Test both models (20b, 120b) with the main branch of vLLM.
 
-## Test Results (02/03/2026)
+## Test Results (03/11/2026)
 
-⚠️ **GPT-OSS-120b** partially performs file search (RAG) operations via vLLM 0.11.2+rhai5 (see Prompt 2 issue below).
+✅ **GPT-OSS-120b** successfully performs file search (RAG) operations via vLLM 0.11.2+rhai5.
 ✅ **GPT-OSS-20b** successfully performs file search (RAG) operations via vLLM 0.11.2+rhai5.
 
 ## Setup
@@ -29,35 +29,42 @@ Manually test that GPT-OSS models can correctly perform RAG operations (file-sea
 
 Each notebook:
 - Automatically creates a vector store and uploads `reference.txt` if `VECTOR_STORE_IDS` is not set
-- Tests three prompts requiring file search:
+- Tests four prompts requiring file search:
   1. "Use the file search tool to find information in the uploaded documents. What information is available?"
   2. "Search the uploaded documents and summarize the key points."
   3. "What are the main topics covered in the uploaded documents? Use file search to find this information."
+  4. "Who is Silas Vance?"
 
 ## GPT-OSS-120b Results
 
 ### Prompt 1
-**Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
+**Status:** completed | **File search:** True | **Tool calls:** 2 | **Messages:** 1
 
-**Response:** The uploaded material contains a single text file (reference.txt) that provides the following details:
-- **Person:** Silas Vance – an Arcturus Systems Engineer  
-- **Team:** Works in the Nexus and NCP team  
-- **Current work:** Manually testing modular‑stack tools with open‑source models on a high‑performance inference engine  
-- **Manager:** Alaric  
-- **Teammates:** Bastien, Jace, Elian, Amara, Kaelen, Merrick, Seraphina, Garek, Nolan, and Rina  
-- **Planned project:** Merrick and Silas intend to build a Test Strategy and Test Automation framework for the modular‑stack responses API
+**Response:** The only uploaded document is **reference.txt**. It contains the following information:
+- Silas Vance is an Arcturus Systems Engineer who works on the Nexus and NCP team.
+- He is currently manually testing modular‑stack tools with open‑source models on a high‑performance inference engine.
+- His manager is Alaric.
+- His teammates are Bastien, Jace, Elian, Amara, Kaelen, Merrick, Seraphina, Garek, Nolan, and Rina.
+- Merrick and Silas are planning to build a Test Strategy and Test Automation framework for the modular‑stack responses API.
 
 ### Prompt 2
-**Status:** completed | **File search:** False | **Tool calls:** 0 | **Messages:** 1
+**Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
 
-**Response:** I'm happy to help, but I don't see any documents attached to this conversation. Could you please upload the files you'd like me to search and summarize, or let me know which specific documents you're referring to? Once I have them, I'll review the content and provide a concise summary of the key points.
-
-⚠️ **Issue:** The model did not invoke the `file_search` tool for this prompt. The prompt "Search the uploaded documents and summarize the key points" does not explicitly mention "file search" or "tool", and the 120b model requires explicit tool instructions to invoke tools. See "Model Behavior Differences" section below.
+**Response:** **Summary of the uploaded document (reference.txt)**
+- **Silas Vance** works as an **Arcturus Systems Engineer** on the **Nexus and NCP team**.
+- He is **currently manually testing modular‑stack tools** using **open‑source models** on a **high‑performance inference engine**.
+- His **manager** is **Alaric** and his **teammates** include **Bastien, Jace, Elian, Amara, Kaelen, Merrick, Seraphina, Garek, Nolan, and Rina**.
+- **Merrick** and **Silas** are **planning to build a Test Strategy and Test Automation framework** specifically for the **modular‑stack responses API**.
 
 ### Prompt 3
 **Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
 
-**Response:** The uploaded documents primarily discuss the work of Silas Vance and the Nexus & NCP team at Arcturus, focusing on manually testing modular‑stack tools with open‑source models on a high‑performance inference engine...
+**Response:** The uploaded document primarily discusses Silas Vance's role as an Arcturus Systems Engineer working on testing modular‑stack tools with open‑source models on a high‑performance inference engine. It also lists his manager (Alaric) and teammates (Bastien, Jace, Elian, Amara, Kaelen, Merrick, Seraphina, Garek, Nolan, and Rina). Finally, the document mentions the plan to build a test strategy and test‑automation framework for the modular‑stack responses API.
+
+### Prompt 4
+**Status:** completed | **File search:** True | **Tool calls:** 1 | **Messages:** 1
+
+**Response:** Silas Vance is an Arcturus Systems Engineer who works on the Nexus and NCP team. He is currently engaged in manually testing modular‑stack tools with open‑source models on a high‑performance inference engine, and is collaborating with his manager Alaric and teammates—including Merrick, with whom he is planning to build a test‑strategy and test‑automation framework for the modular‑stack responses API.
 
 ## GPT-OSS-20b Results
 
@@ -80,41 +87,27 @@ Each notebook:
 
 ## Analysis
 
-**GPT-OSS-20b successfully performs file search (RAG) operations through Llama Stack Responses API** using vLLM 0.11.2+rhai5:
+**Both GPT-OSS-20b and GPT-OSS-120b successfully perform file search (RAG) operations through Llama Stack Responses API** using vLLM 0.11.2+rhai5:
 
 - ✅ Correctly invokes `file_search` tool with vector store IDs for all prompts
 - ✅ Retrieves relevant document chunks from the vector store
 - ✅ Generates accurate responses based on retrieved context
 - ✅ Includes file citations in responses
-- ✅ All three test prompts completed successfully with accurate information retrieval
-
-**GPT-OSS-120b partially performs file search (RAG) operations:**
-
-- ✅ Correctly invokes `file_search` tool when explicitly instructed (Prompts 1 and 3)
-- ⚠️ Does not invoke `file_search` tool when prompt lacks explicit tool instructions (Prompt 2)
-- ✅ Retrieves relevant document chunks when tool is invoked
-- ✅ Generates accurate responses based on retrieved context
-- ✅ Includes file citations in responses when tool is used
+- ✅ All four test prompts completed successfully with accurate information retrieval
 
 **Key Observations:**
-- File search tool is properly triggered for all prompts in 20b model
-- File search tool is triggered for 2 out of 3 prompts in 120b model (see Model Behavior Differences below)
-- Retrieved content matches the reference document accurately when tool is used
-- Both models correctly reference "uploaded documents" in responses when tool is invoked
+- File search tool is properly triggered for all prompts in both models
+- Retrieved content matches the reference document accurately
+- Both models correctly reference "uploaded documents" in responses
 - Response quality is high with proper summarization and topic extraction
-- All key facts from the reference document (Silas Vance, Arcturus Systems Engineer, Nexus and NCP team, manager Alaric, teammates, and test automation framework plans) are accurately retrieved and presented when tool is used
+- All key facts from the reference document (Silas Vance, Arcturus Systems Engineer, Nexus and NCP team, manager Alaric, teammates, and test automation framework plans) are accurately retrieved and presented
+- The 120b model occasionally makes 2 file_search calls for a single prompt (e.g., Prompt 1), showing more thorough retrieval behavior
 
-**Model Behavior Differences:**
-
-The 120b model requires **explicit tool instructions** to invoke the `file_search` tool, while the 20b model can **infer tool usage** from context:
-
+**Prompt Success Rate:**
 - **Prompt 1**: "Use the file search tool..." → Both models use tool ✅
-- **Prompt 2**: "Search the uploaded documents..." → 20b uses tool ✅, 120b does not ⚠️
+- **Prompt 2**: "Search the uploaded documents..." → Both models use tool ✅
 - **Prompt 3**: "Use file search to find..." → Both models use tool ✅
-
-**Root Cause**: The 120b model is stricter about tool invocation and only uses tools when explicitly instructed. Prompt 2 does not contain the words "file search" or "tool", so the 120b model responded directly without invoking the tool, while the 20b model inferred that "search the uploaded documents" requires the file_search tool.
-
-**Recommendation**: For consistent behavior across both models, prompts should explicitly mention "file search" or "file search tool" when tool usage is required.
+- **Prompt 4**: "Who is Silas Vance?" → Both models use tool ✅
 
 ## Differences from Web Search
 
