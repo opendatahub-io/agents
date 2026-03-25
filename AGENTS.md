@@ -25,30 +25,6 @@ A collection of examples, tools, and validation notebooks demonstrating how to b
 - **Web/Infra**: Flask, Kubernetes Python client, Podman/Docker, Pydantic (structured outputs)
 - **Models tested**: GPT-4o, GPT-4o-mini, Qwen3-0.6B/1.7B/8B, Llama 3.2, Llama Guard 3, GPT-OSS-20b/120b, Gemini 2.5 Pro
 
-## Key Directories
-
-```
-examples/
-  github-mcp/          # Simplest example: OpenAI SDK + GitHub MCP (Python & Go)
-  gsuite-mcp/          # Google Docs MCP with full OAuth2 flow (PKCE in Go)
-  kubernetes-mcp/      # K8s pod listing with bearer token auth + RBAC demo manifests
-  slack-mcp/           # Slack channel listing + Podman MCP server setup + OAuth scope validation
-  servicenow-mcp/      # ServiceNow incident listing
-  mcp-project-reporting/  # Jira MCP via docker-compose + complex Llama Stack config (OAuth2, scoring, eval)
-  langchain-langgraph/ # Full app: Flask UI + LangGraph multi-stage routing (classify -> support/legal -> K8s/GitHub MCP)
-  ai_assistant_for_troubleshooting_apps/  # CrewAI: K8s event watcher -> diagnose -> GitHub PR -> Slack notify
-  agents_tracing-eval_mlflow/  # MLflow tracing examples: NPS chat agent + log monitor event-driven agent
-tools/
-  mcp-tester/          # MCP server connectivity validator (auto-detects SSE vs HTTP transport)
-  llama-stack/local/   # Local Llama Stack quickstart (setup.sh + run.yaml)
-  vllm/                # vLLM setup for macOS (CPU, Qwen3-0.6B)
-benchmarking/          # BFCL benchmarking guide + significance testing (bootstrap, permutation)
-validation-vllm/       # Jupyter notebooks validating GPT-OSS models (function calling, web search, file search)
-migration/             # Legacy agent migration from WatsonX (notebook + run.yaml)
-adr/                   # Architecture Decision Records (template + minimal-sdk decision)
-mcp-discovery-configmap/  # JSON schema for K8s ConfigMap-based MCP server discovery
-```
-
 ## Important Files
 
 - `adr/minimal-sdk.md` -- Key architectural decision: why no custom SDK (Option 8)
