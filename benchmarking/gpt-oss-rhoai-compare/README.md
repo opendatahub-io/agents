@@ -1,11 +1,13 @@
-## Plan of Action 
-- [This](https://docs.google.com/spreadsheets/d/1DkRy2g_p95Ju25xj0fT8cDHml1GXfWISYTXOqUs3a7w/edit?usp=sharing) Spreadsheet lists corresponding versions of llamastack shipped with RHOAI 3.3 and 3.4
-- [This](https://docs.google.com/spreadsheets/d/17GnTfbYP2nE36VF4LXIBVQeXRGh3fUJmqyNUnSFb9bQ/edit?usp=sharing) is corresponding one for vllm-rhoai mapping
+## BFCL Evaluation: GPT-OSS on RHOAI 3.3 vs 3.4
 
-| RHOAI target version | LLS rhoai version | VLLM rhoai version |
+This guide covers how to reproduce the [Berkeley Function Calling Leaderboard (BFCL)](https://gorilla.cs.berkeley.edu/leaderboard.html) multi-turn evaluation of GPT-OSS models across RHOAI 3.3 and 3.4 inference stacks.
+
+### Versions tested
+
+| RHOAI target version | OGX rhoai version | VLLM rhoai version |
 |---|---|---|
-| 3.3 | [0.4.2.1+rhai0](https://gitlab.com/redhat/rhel-ai/llama-stack/pipeline/-/releases/3.3.932+llama-stack-cpu-ubi9-aarch64) | v0.13.0 |
-| 3.4 | [v0.7.1+rhaiv.1](https://gitlab.com/redhat/rhel-ai/llama-stack/pipeline/-/releases/3.4.1341+llama-stack-cpu-ubi9-ppc64le) | 0.18.0 |
+| 3.3 | [0.4.2.1+rhai0](https://github.com/opendatahub-io/ogx/tree/v0.4.2.1%2Brhai0) | [v0.13.0](https://github.com/vllm-project/vllm/tree/v0.13.0) |
+| 3.4 | [v0.7.1+rhaiv.1](https://github.com/opendatahub-io/ogx/tree/v0.7.1%2Brhaiv.1) | [v0.18.0](https://github.com/vllm-project/vllm/tree/v0.18.0) |
 
 
 
@@ -13,16 +15,16 @@
 
 ### Setup
 
-Clone the repos needed locally (Llama Stack + Gorilla). vLLM is built on the AWS instance — see [vLLM Setup (AWS)](#vllm-setup-aws).
+Clone the repos needed locally (OGX + Gorilla). vLLM is built on your GPU node — see [vLLM Setup](#vllm-setup).
 
 ```bash
 # RHOAI 3.3
 mkdir -p rhoai_3.3
-git clone --depth 1 --branch '0.4.2.1+rhai0' https://github.com/opendatahub-io/llama-stack.git rhoai_3.3/llama-stack
+git clone --depth 1 --branch '0.4.2.1+rhai0' https://github.com/opendatahub-io/ogx.git rhoai_3.3/ogx
 
 # RHOAI 3.4
 mkdir -p rhoai_3.4
-git clone --depth 1 --branch 'v0.7.1+rhaiv.1' https://github.com/opendatahub-io/llama-stack.git rhoai_3.4/llama-stack
+git clone --depth 1 --branch 'v0.7.1+rhaiv.1' https://github.com/opendatahub-io/ogx.git rhoai_3.4/ogx
 
 # BFCL Gorilla
 git clone https://github.com/ShishirPatil/gorilla.git gorilla
@@ -33,21 +35,21 @@ Local folder structure:
 
 ```
 ├── rhoai_3.3/
-│   └── llama-stack/   (tag 0.4.2.1+rhai0)
+│   └── ogx/   (tag 0.4.2.1+rhai0)
 ├── rhoai_3.4/
-│   └── llama-stack/   (tag v0.7.1+rhaiv.1)
+│   └── ogx/   (tag v0.7.1+rhaiv.1)
 └── gorilla/           (commit 6ea5797)
 ```
 
 ### Source Links
 
 **RHOAI 3.3**
-- [llama-stack](https://github.com/opendatahub-io/llama-stack/tree/0.4.2.1%2Brhai0) — tag `0.4.2.1+rhai0`
+- [ogx](https://github.com/opendatahub-io/ogx/tree/0.4.2.1%2Brhai0) — tag `0.4.2.1+rhai0`
 
 **RHOAI 3.4**
-- [llama-stack](https://github.com/opendatahub-io/llama-stack/tree/v0.7.1%2Brhaiv.1) — tag `v0.7.1+rhaiv.1`
+- [ogx](https://github.com/opendatahub-io/ogx/tree/v0.7.1%2Brhaiv.1) — tag `v0.7.1+rhaiv.1`
 
-**vLLM** (built on AWS)
+**vLLM** (built on GPU node)
 - [v0.13.0](https://github.com/vllm-project/vllm/tree/v0.13.0) — RHOAI 3.3
 - [v0.18.0](https://github.com/vllm-project/vllm/tree/v0.18.0) — RHOAI 3.4
 
@@ -80,12 +82,12 @@ This registers 4 model keys:
 |---|---|---|
 | `vllm-direct-resp/gpt-oss-20b` | vLLM directly | `openai/gpt-oss-20b` |
 | `vllm-direct-resp/gpt-oss-120b` | vLLM directly | `openai/gpt-oss-120b` |
-| `ls-vllm-resp/gpt-oss-20b` | Llama Stack -> vLLM | `vllm/openai/gpt-oss-20b` |
-| `ls-vllm-resp/gpt-oss-120b` | Llama Stack -> vLLM | `vllm/openai/gpt-oss-120b` |
+| `ls-vllm-resp/gpt-oss-20b` | OGX -> vLLM | `vllm/openai/gpt-oss-20b` |
+| `ls-vllm-resp/gpt-oss-120b` | OGX -> vLLM | `vllm/openai/gpt-oss-120b` |
 
 ### Manually Pass reasoning effort to responses api
 
-This is a no-op for vLLM direct calls but required for Llama Stack to correctly forward reasoning output back as input in subsequent turns.
+This is a no-op for vLLM direct calls but required for OGX to correctly forward reasoning output back as input in subsequent turns.
 
 ```
 gorilla/berkeley-function-call-leaderboard/bfcl_eval/model_handler/api_inference/openai_response.py
@@ -101,11 +103,12 @@ def generate_with_backoff(self, **kwargs):
 
 
 
-## vLLM Setup (AWS)
+## vLLM Setup
 
-Follow the [GPT-OSS on AWS guide](https://docs.google.com/document/d/1y04AuNbeFIHBwaDZgbrMbq20MqajLp_LrBUtrcrBSJE/edit?usp=sharing) for AWS provisioning on GPU node, and port forwarding. The only change is cloning the version-specific vllm repo instead of upstream.
+You need a GPU node with at least 4 GPUs to serve GPT-OSS-120b (e.g., AWS `g6e.12xlarge` with 4x NVIDIA L40S). GPT-OSS-20b fits on the same hardware. Any cloud provider or bare-metal server with NVIDIA GPUs and CUDA drivers will work.
 
-On the AWS instance:
+On your GPU node:
+
 ```bash
 # 1. Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -115,19 +118,17 @@ git clone --depth 1 --branch v0.13.0 https://github.com/vllm-project/vllm.git   
 # or
 git clone --depth 1 --branch v0.18.0 https://github.com/vllm-project/vllm.git   # RHOAI 3.4
 
-# 3. Build from source (~20 min)
+# 3. Build from source
 cd vllm
 uv venv --python 3.12 --seed
 source .venv/bin/activate
-# Took an Hour
 uv pip install --editable .
 ```
 
-### Serve the model (on the AWS instance)
+### Serve the model
 
 ```bash
-# gpt-oss-120b
-vllm serve openai/gpt-oss-120b \ # or openai/gpt-oss-20b
+vllm serve openai/gpt-oss-120b \
     --host 0.0.0.0 \
     --port 8000 \
     --tensor-parallel-size 4 \
@@ -136,16 +137,16 @@ vllm serve openai/gpt-oss-120b \ # or openai/gpt-oss-20b
     --tool-call-parser openai
 ```
 
-Now port forwarding as per guide. vLLM will be available at `localhost:8000` for Llama Stack to connect to via `VLLM_URL=http://localhost:8000/v1`.
+If the GPU node is remote, use SSH port forwarding (`ssh -L 8000:localhost:8000 user@host`) so that vLLM is available at `localhost:8000` for OGX to connect to via `VLLM_URL=http://localhost:8000/v1`.
 
-## Llama Stack Setup
+## OGX Setup
 
 Repeat for each version (`rhoai_3.3`, `rhoai_3.4`). The install process is the same for both.
 
 ### 1. Create venv and install from source
 
 ```bash
-cd rhoai_3.3/llama-stack   # or rhoai_3.4/llama-stack
+cd rhoai_3.3/ogx   # or rhoai_3.4/ogx
 uv venv --python=3.12
 source .venv/bin/activate
 uv pip install -e .
@@ -158,19 +159,19 @@ VLLM_URL=http://localhost:8000/v1 uv run llama stack run starter
 For more details on setup and usage, build the docs locally for each version:
 
 ```bash
-cd <rhoai_version>/llama-stack/docs
+cd <rhoai_version>/ogx/docs
 npm install
 npm run gen-api-docs all
 npm run build
 npm run serve   # opens at http://localhost:3000
 ```
 
-- **RHOAI 3.3**: See `rhoai_3.3/llama-stack/docs/docs/getting_started/detailed_tutorial.mdx`
-- **RHOAI 3.4**: See `rhoai_3.4/llama-stack/docs/docs/getting_started/detailed_tutorial.mdx`
+- **RHOAI 3.3**: See `rhoai_3.3/ogx/docs/docs/getting_started/detailed_tutorial.mdx`
+- **RHOAI 3.4**: See `rhoai_3.4/ogx/docs/docs/getting_started/detailed_tutorial.mdx`
 
 ### Troubleshooting: 
 
-Noticed an error like this due to stale registry from a previous Llama Stack run :
+Noticed an error like this due to stale registry from a previous OGX run :
 ```
 ValueError: Object of type 'tool_group' and identifier 'builtin::websearch' already exists.
 ```
@@ -196,7 +197,7 @@ cd gorilla/berkeley-function-call-leaderboard
 source .venv/bin/activate
 ```
 
-**A. vLLM direct** (port-forwarded from AWS on `:8000`):
+**A. vLLM direct** (port-forwarded on `:8000`):
 
 ```bash
 export OPENAI_BASE_URL=http://localhost:8000/v1
@@ -211,7 +212,7 @@ bfcl generate --model vllm-direct-resp/gpt-oss-120b --test-category multi_turn -
 bfcl evaluate --model vllm-direct-resp/gpt-oss-120b --test-category multi_turn
 ```
 
-**B. Llama Stack -> vLLM** (Llama Stack on `:8321`, proxying to vLLM):
+**B. OGX -> vLLM** (OGX on `:8321`, proxying to vLLM):
 
 ```bash
 export OPENAI_BASE_URL=http://localhost:8321/v1
@@ -226,13 +227,11 @@ bfcl generate --model ls-vllm-resp/gpt-oss-120b --test-category multi_turn --num
 bfcl evaluate --model ls-vllm-resp/gpt-oss-120b --test-category multi_turn
 ```
 
-### 2. Results (BFCL Multi-Turn, GPT-OSS-120b)
+### 2. Results
 
-Table added [here](https://docs.google.com/document/d/1zZRE9zKxuYeDHnCyrnObY23nmvrIcT4qbn9k0-CAd8s/edit?usp=sharing) for ease of discussion.
+#### GPT-OSS-120b (BFCL Multi-Turn)
 
-
-Same Result Copied here : 
-**Llama Stack + vLLM (what customers get)**
+**OGX + vLLM (what customers get)**
 
 | Config | Overall Acc | Base | Miss Func | Miss Param | Long Context |
 |---|---|---|---|---|---|
@@ -241,12 +240,35 @@ Same Result Copied here :
 | RHOAI 3.4 LS + RHOAI 3.3 vLLM | 43.62% | 53.00% | 44.50% | 46.50% | 30.50% |
 | RHOAI 3.4 LS + RHOAI 3.4 vLLM | **51.37%** | 63.50% | 53.50% | 52.50% | 36.00% |
 
-**vLLM direct (no Llama Stack)**
+**vLLM direct (no OGX)**
 
 | Config | Overall Acc | Base | Miss Func | Miss Param | Long Context |
 |---|---|---|---|---|---|
-| RHOAI 3.3 vLLM direct | 45.75% | 60.50% | 40.50% | 48.00% | 34.00% |
-| RHOAI 3.4 vLLM direct | 40.88% | 55.50% | 38.50% | 40.50% | 29.00% |
+| RHOAI 3.3 vLLM | 45.75% | 60.50% | 40.50% | 48.00% | 34.00% |
+| RHOAI 3.4 vLLM | 40.88% | 55.50% | 38.50% | 40.50% | 29.00% |
 
+#### GPT-OSS-20b (BFCL Multi-Turn)
 
+**OGX + vLLM
 
+| Config | Overall Acc | Base | Miss Func | Miss Param | Long Context |
+|---|---|---|---|---|---|
+| RHOAI 3.3 LS + RHOAI 3.3 vLLM | 30.63% | 33.50% | 32.50% | 36.00% | 20.50% |
+| RHOAI 3.4 LS + RHOAI 3.3 vLLM | 28.25% | 34.50% | 28.50% | 33.50% | 16.50% |
+| RHOAI 3.4 LS + RHOAI 3.4 vLLM | 29.25% | 32.50% | 31.50% | 32.50% | 20.50% |
+
+**vLLM direct (no OGX)**
+
+| Config | Overall Acc | Base | Miss Func | Miss Param | Long Context |
+|---|---|---|---|---|---|
+| RHOAI 3.3 vLLM | 40.12% | 55.00% | 34.50% | 42.50% | 28.50% |
+| RHOAI 3.4 vLLM | 35.62% | 46.50% | 30.00% | 40.00% | 26.00% |
+
+---
+
+## Internal Documentation
+
+- [OGX ↔ RHOAI version mapping](https://docs.google.com/spreadsheets/d/1DkRy2g_p95Ju25xj0fT8cDHml1GXfWISYTXOqUs3a7w/edit?usp=sharing)
+- [vLLM ↔ RHOAI version mapping](https://docs.google.com/spreadsheets/d/17GnTfbYP2nE36VF4LXIBVQeXRGh3fUJmqyNUnSFb9bQ/edit?usp=sharing)
+- [Results discussion doc](https://docs.google.com/document/d/1zZRE9zKxuYeDHnCyrnObY23nmvrIcT4qbn9k0-CAd8s/edit?usp=sharing)
+- [GPT-OSS on AWS provisioning guide](https://docs.google.com/document/d/1y04AuNbeFIHBwaDZgbrMbq20MqajLp_LrBUtrcrBSJE/edit?usp=sharing)
