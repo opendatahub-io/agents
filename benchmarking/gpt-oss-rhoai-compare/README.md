@@ -33,7 +33,7 @@ cd gorilla && git checkout 6ea57973c7a6097fd7c5915698c54c17c5b1b6c8 && cd ..
 
 Local folder structure:
 
-```
+```text
 ├── rhoai_3.3/
 │   └── ogx/   (tag 0.4.2.1+rhai0)
 ├── rhoai_3.4/
@@ -72,7 +72,7 @@ uv pip install -e .
 
 The gorilla repo doesn't know about GPT-OSS models. Copy the `MODEL_CONFIG_MAPPING.update({...})` blocks from `bench_configs.py` and append them to the bottom of:
 
-```
+```text
 gorilla/berkeley-function-call-leaderboard/bfcl_eval/constants/model_config.py
 ```
 
@@ -89,7 +89,7 @@ This registers 4 model keys:
 
 This is a no-op for vLLM direct calls but required for OGX to correctly forward reasoning output back as input in subsequent turns.
 
-```
+```text
 gorilla/berkeley-function-call-leaderboard/bfcl_eval/model_handler/api_inference/openai_response.py
 ```
 
@@ -172,7 +172,7 @@ npm run serve   # opens at http://localhost:3000
 ### Troubleshooting: 
 
 Noticed an error like this due to stale registry from a previous OGX run :
-```
+```text
 ValueError: Object of type 'tool_group' and identifier 'builtin::websearch' already exists.
 ```
 
@@ -249,7 +249,7 @@ bfcl evaluate --model ls-vllm-resp/gpt-oss-120b --test-category multi_turn
 
 #### GPT-OSS-20b (BFCL Multi-Turn)
 
-**OGX + vLLM
+**OGX + vLLM**
 
 | Config | Overall Acc | Base | Miss Func | Miss Param | Long Context |
 |---|---|---|---|---|---|

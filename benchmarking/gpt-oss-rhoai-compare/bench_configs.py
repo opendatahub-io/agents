@@ -6,7 +6,7 @@ Append these MODEL_CONFIG_MAPPING.update() blocks to:
 
 Two routing modes:
   - vllm-direct   : OPENAI_BASE_URL=http://localhost:8000/v1  (vLLM on AWS, port-forwarded)
-  - ls-vllm       : OPENAI_BASE_URL=http://localhost:8321/v1  (Llama Stack proxying to vLLM)
+  - ls-vllm       : OPENAI_BASE_URL=http://localhost:8321/v1  (OGX proxying to vLLM)
 """
 
 from bfcl_eval.model_handler.api_inference.openai_response import OpenAIResponsesHandler
@@ -48,13 +48,13 @@ MODEL_CONFIG_MAPPING.update({
 })
 
 
-######  ======= LLAMA STACK -> vLLM - Responses API ========= #######
+######  ======= OGX -> vLLM - Responses API ========= #######
 
 ## gpt-oss-20b
 MODEL_CONFIG_MAPPING.update({
     "ls-vllm-resp/gpt-oss-20b": ModelConfig(
         model_name="vllm/openai/gpt-oss-20b",
-        display_name="openai/gpt-oss-20b Llama Stack -> vLLM Responses",
+        display_name="openai/gpt-oss-20b OGX -> vLLM Responses",
         url="https://huggingface.co/openai/gpt-oss-20b",
         org="OpenAI",
         license="apache-2.0",
@@ -70,7 +70,7 @@ MODEL_CONFIG_MAPPING.update({
 MODEL_CONFIG_MAPPING.update({
     "ls-vllm-resp/gpt-oss-120b": ModelConfig(
         model_name="vllm/openai/gpt-oss-120b",
-        display_name="openai/gpt-oss-120b Llama Stack -> vLLM Responses",
+        display_name="openai/gpt-oss-120b OGX -> vLLM Responses",
         url="https://huggingface.co/openai/gpt-oss-120b",
         org="OpenAI",
         license="apache-2.0",
