@@ -216,3 +216,9 @@ __marimo__/
 **/gorilla/
 # MLflow database
 mlflow.db
+
+# Local run artifacts (dedup reports, etc.)
+.local/
+
+# Agent readiness checks
+.agentready/
