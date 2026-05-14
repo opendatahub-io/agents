@@ -20,6 +20,7 @@ from pathlib import Path
 MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
 MAX_COMMENTS = 3
+DEFAULT_MAX_GAP_PAIRS = 500
 SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 
@@ -144,7 +145,24 @@ def main():
         help="Minimum match degree for group edges (default: 3). "
         "Must match the threshold used by form_groups.py.",
     )
+    parser.add_argument(
+        "--max-gap-pairs",
+        type=int,
+        default=None,
+        help=f"Max gap pairs to prepare (default: {DEFAULT_MAX_GAP_PAIRS})",
+    )
+    parser.add_argument(
+        "--no-limit",
+        action="store_true",
+        help="Prepare all gap pairs, overriding the default cap",
+    )
     args = parser.parse_args()
+
+    using_default_cap = args.max_gap_pairs is None and not args.no_limit
+    if using_default_cap:
+        args.max_gap_pairs = DEFAULT_MAX_GAP_PAIRS
+    elif args.no_limit:
+        args.max_gap_pairs = None
 
     confirmed_path = Path(args.confirmed_matches)
     rfes_dir = Path(args.rfes_dir)
@@ -196,6 +214,21 @@ def main():
             file=sys.stderr,
         )
         return
+
+    if args.max_gap_pairs is not None and len(missing) > args.max_gap_pairs:
+        total_missing = len(missing)
+        missing = missing[: args.max_gap_pairs]
+        if using_default_cap:
+            print(
+                f"Capping at {args.max_gap_pairs} of {total_missing} gap pairs "
+                f"(default {DEFAULT_MAX_GAP_PAIRS}); use --no-limit to prepare all",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"Preparing {args.max_gap_pairs} of {total_missing} gap pairs",
+                file=sys.stderr,
+            )
 
     gap_pairs_dir = output_dir / "gap_pairs"
     gap_pairs_dir.mkdir(parents=True, exist_ok=True)

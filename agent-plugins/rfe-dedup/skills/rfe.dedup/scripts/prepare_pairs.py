@@ -15,6 +15,7 @@ from pathlib import Path
 MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
 MAX_COMMENTS = 3
+DEFAULT_MAX_PAIRS = 500
 SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 
@@ -96,9 +97,20 @@ def main():
         "--max-pairs",
         type=int,
         default=None,
-        help="Max candidate pairs to prepare (default: all)",
+        help=f"Max candidate pairs to prepare (default: {DEFAULT_MAX_PAIRS})",
+    )
+    parser.add_argument(
+        "--no-limit",
+        action="store_true",
+        help="Prepare all candidate pairs, overriding the default cap",
     )
     args = parser.parse_args()
+
+    using_default_cap = args.max_pairs is None and not args.no_limit
+    if using_default_cap:
+        args.max_pairs = DEFAULT_MAX_PAIRS
+    elif args.no_limit:
+        args.max_pairs = None
 
     candidates_path = Path(args.candidates)
     rfes_dir = Path(args.rfes_dir)
@@ -117,10 +129,17 @@ def main():
 
     if args.max_pairs is not None and args.max_pairs < total_available:
         candidate_list = candidate_list[: args.max_pairs]
-        print(
-            f"Preparing {args.max_pairs} of {total_available} candidate pairs",
-            file=sys.stderr,
-        )
+        if using_default_cap:
+            print(
+                f"Capping at {args.max_pairs} of {total_available} candidate pairs "
+                f"(default {DEFAULT_MAX_PAIRS}); use --no-limit to prepare all",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"Preparing {args.max_pairs} of {total_available} candidate pairs",
+                file=sys.stderr,
+            )
     else:
         print(
             f"Preparing all {total_available} candidate pairs",

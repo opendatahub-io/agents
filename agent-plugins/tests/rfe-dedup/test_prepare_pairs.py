@@ -298,6 +298,95 @@ class TestPrepairPairsMainIntegration:
         pair_files = list((output_dir / "pairs").glob("pair_*.md"))
         assert len(pair_files) == 0
 
+    def test_default_cap_limits_output(self, tmp_path, monkeypatch, capsys):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        num_rfes = prepare_pairs.DEFAULT_MAX_PAIRS + 10
+        for i in range(1, num_rfes + 2):
+            (rfes_dir / f"RHAIRFE-{i}.json").write_text(
+                json.dumps(make_rfe(f"RHAIRFE-{i}"))
+            )
+
+        candidates = [
+            {"rfe_a": f"RHAIRFE-{i}", "rfe_b": f"RHAIRFE-{i+1}", "similarity_score": 0.9}
+            for i in range(1, num_rfes + 1)
+        ]
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(candidates_path, candidates)
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+        ])
+        prepare_pairs.main()
+
+        pair_files = list((output_dir / "pairs").glob("pair_*.md"))
+        assert len(pair_files) == prepare_pairs.DEFAULT_MAX_PAIRS
+        captured = capsys.readouterr()
+        assert "--no-limit" in captured.err
+
+    def test_no_limit_overrides_default_cap(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        num_candidates = prepare_pairs.DEFAULT_MAX_PAIRS + 5
+        for i in range(1, num_candidates + 2):
+            (rfes_dir / f"RHAIRFE-{i}.json").write_text(
+                json.dumps(make_rfe(f"RHAIRFE-{i}"))
+            )
+
+        candidates = [
+            {"rfe_a": f"RHAIRFE-{i}", "rfe_b": f"RHAIRFE-{i+1}", "similarity_score": 0.9}
+            for i in range(1, num_candidates + 1)
+        ]
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(candidates_path, candidates)
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+            "--no-limit",
+        ])
+        prepare_pairs.main()
+
+        pair_files = list((output_dir / "pairs").glob("pair_*.md"))
+        assert len(pair_files) == num_candidates
+
+    def test_explicit_max_pairs_overrides_default(self, tmp_path, monkeypatch, capsys):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        for i in range(1, 12):
+            (rfes_dir / f"RHAIRFE-{i}.json").write_text(
+                json.dumps(make_rfe(f"RHAIRFE-{i}"))
+            )
+
+        candidates = [
+            {"rfe_a": f"RHAIRFE-{i}", "rfe_b": f"RHAIRFE-{i+1}", "similarity_score": 0.9}
+            for i in range(1, 11)
+        ]
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(candidates_path, candidates)
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+            "--max-pairs", "3",
+        ])
+        prepare_pairs.main()
+
+        pair_files = list((output_dir / "pairs").glob("pair_*.md"))
+        assert len(pair_files) == 3
+        captured = capsys.readouterr()
+        assert "--no-limit" not in captured.err
+
     def test_unsafe_key_in_candidate_is_skipped(self, tmp_path, monkeypatch, capsys):
         rfes_dir = tmp_path / "rfes"
         rfes_dir.mkdir()

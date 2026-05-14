@@ -284,6 +284,75 @@ class TestFindMissingPairsMainIntegration:
         captured = capsys.readouterr()
         assert "unsafe" in captured.err.lower()
 
+    def test_default_gap_cap_limits_output(self, tmp_path, monkeypatch, capsys):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        match_dir = tmp_path / "match_results"
+        match_dir.mkdir()
+
+        num_rfes = 50
+        keys = [f"RHAIRFE-{i}" for i in range(1, num_rfes + 1)]
+        for key in keys:
+            (rfes_dir / f"{key}.json").write_text(json.dumps(make_rfe(key)))
+
+        confirmed = [make_match(keys[0], k, 4) for k in keys[1:]]
+        confirmed_path = tmp_path / "confirmed_matches.json"
+        confirmed_path.write_text(json.dumps(confirmed))
+
+        import find_missing_pairs as fmp
+        original_cap = fmp.DEFAULT_MAX_GAP_PAIRS
+        fmp.DEFAULT_MAX_GAP_PAIRS = 10
+        try:
+            monkeypatch.setattr(sys, "argv", [
+                "find_missing_pairs.py",
+                "--confirmed-matches", str(confirmed_path),
+                "--rfes-dir", str(rfes_dir),
+                "--output-dir", str(tmp_path),
+                "--match-dir", str(match_dir),
+            ])
+            fmp.main()
+
+            gap_files = list((tmp_path / "gap_pairs").glob("pair_*.md"))
+            assert len(gap_files) == 10
+            captured = capsys.readouterr()
+            assert "--no-limit" in captured.err
+        finally:
+            fmp.DEFAULT_MAX_GAP_PAIRS = original_cap
+
+    def test_no_limit_overrides_gap_cap(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        match_dir = tmp_path / "match_results"
+        match_dir.mkdir()
+
+        num_rfes = 10
+        keys = [f"RHAIRFE-{i}" for i in range(1, num_rfes + 1)]
+        for key in keys:
+            (rfes_dir / f"{key}.json").write_text(json.dumps(make_rfe(key)))
+
+        confirmed = [make_match(keys[0], k, 4) for k in keys[1:]]
+        confirmed_path = tmp_path / "confirmed_matches.json"
+        confirmed_path.write_text(json.dumps(confirmed))
+
+        import find_missing_pairs as fmp
+        original_cap = fmp.DEFAULT_MAX_GAP_PAIRS
+        fmp.DEFAULT_MAX_GAP_PAIRS = 5
+        try:
+            monkeypatch.setattr(sys, "argv", [
+                "find_missing_pairs.py",
+                "--confirmed-matches", str(confirmed_path),
+                "--rfes-dir", str(rfes_dir),
+                "--output-dir", str(tmp_path),
+                "--match-dir", str(match_dir),
+                "--no-limit",
+            ])
+            fmp.main()
+
+            gap_files = list((tmp_path / "gap_pairs").glob("pair_*.md"))
+            assert len(gap_files) > 5
+        finally:
+            fmp.DEFAULT_MAX_GAP_PAIRS = original_cap
+
     def test_degree_one_already_evaluated_pair_not_repeated(self, tmp_path, monkeypatch, capsys):
         rfes_dir = tmp_path / "rfes"
         rfes_dir.mkdir()

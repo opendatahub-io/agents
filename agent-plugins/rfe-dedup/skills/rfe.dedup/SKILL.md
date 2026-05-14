@@ -169,7 +169,8 @@ asking.
 
 Run the pair preparation script to extract and format the candidate
 pairs' full text for efficient evaluation. Pass `--max-pairs` with
-the user's chosen count from Step 3 (omit it to prepare all pairs):
+the user's chosen count from Step 3. The script defaults to a cap of
+500 pairs when neither `--max-pairs` nor `--no-limit` is given:
 
 ```bash
 python3 "$SKILL_DIR/scripts/prepare_pairs.py" \
@@ -179,9 +180,11 @@ python3 "$SKILL_DIR/scripts/prepare_pairs.py" \
   --max-pairs <N>
 ```
 
+Pass `--no-limit` instead of `--max-pairs` to prepare all candidates.
+
 This selects the top N candidates by similarity score, then creates
 individual files in `<run_dir>/pairs/`: `pair_001.md`,
-`pair_002.md`, etc. — one per candidate pair, each containing the
+`pair_002.md`, etc., one per candidate pair, each containing the
 formatted RFE text ready for evaluation.
 
 ## Step 4: Evaluate candidate pairs
@@ -270,7 +273,8 @@ ungrouped RFEs.
 
 When candidate pairs are truncated (e.g., top 250), groups formed by
 connected components often have unevaluated intra-group pairs. Run
-this script to identify and prepare them:
+this script to identify and prepare them. The script defaults to a
+cap of 500 gap pairs; pass `--no-limit` to prepare all:
 
 ```bash
 python3 "$SKILL_DIR/scripts/find_missing_pairs.py" \

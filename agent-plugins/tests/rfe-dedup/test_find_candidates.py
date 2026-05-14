@@ -1,4 +1,5 @@
 import json
+import numpy as np
 import pytest
 
 import find_candidates
@@ -179,3 +180,100 @@ class TestKValidation:
         with pytest.raises(SystemExit) as exc_info:
             find_candidates.main()
         assert exc_info.value.code == 1
+
+
+def _write_rfes(rfes_dir, keys):
+    for key in keys:
+        issue = {"key": key, "summary": f"Summary for {key}", "description": f"Desc for {key}", "comments": []}
+        (rfes_dir / f"{key}.json").write_text(json.dumps(issue))
+
+
+def _normalized(vectors):
+    v = np.array(vectors, dtype=np.float32)
+    norms = np.linalg.norm(v, axis=1, keepdims=True)
+    return v / norms
+
+
+class TestFindCandidatesPipeline:
+    """Tests for find_candidates() using structured FAISS/embedding mocks."""
+
+    def test_basic_pair_discovery(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2", "RHAIRFE-3"])
+
+        embeddings = _normalized([[1, 0, 0], [0.95, 0.31, 0], [0, 0, 1]])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, n = find_candidates.find_candidates(rfes_dir, "test-model", 0.5, 10)
+        assert n == 3
+        keys_in_candidates = {(c["rfe_a"], c["rfe_b"]) for c in candidates}
+        assert ("RHAIRFE-1", "RHAIRFE-2") in keys_in_candidates or \
+               ("RHAIRFE-2", "RHAIRFE-1") in keys_in_candidates
+
+    def test_pair_deduplication(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2"])
+
+        embeddings = _normalized([[1, 0], [0.9, 0.44]])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, _ = find_candidates.find_candidates(rfes_dir, "test-model", 0.5, 10)
+        pair_keys = [tuple(sorted([c["rfe_a"], c["rfe_b"]])) for c in candidates]
+        assert len(pair_keys) == len(set(pair_keys))
+
+    def test_threshold_filtering(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2", "RHAIRFE-3"])
+
+        embeddings = _normalized([[1, 0, 0], [0.95, 0.31, 0], [0, 0, 1]])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, _ = find_candidates.find_candidates(rfes_dir, "test-model", 0.9, 10)
+        candidate_keys = set()
+        for c in candidates:
+            candidate_keys.add(c["rfe_a"])
+            candidate_keys.add(c["rfe_b"])
+        assert "RHAIRFE-3" not in candidate_keys
+
+    def test_k_limits_neighbors(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2", "RHAIRFE-3", "RHAIRFE-4"])
+
+        embeddings = _normalized([
+            [1, 0, 0, 0],
+            [0.9, 0.44, 0, 0],
+            [0.8, 0.5, 0.33, 0],
+            [0, 0, 0, 1],
+        ])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, _ = find_candidates.find_candidates(rfes_dir, "test-model", 0.0, k=1)
+        assert len(candidates) <= 4
+
+    def test_n_less_than_k(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2"])
+
+        embeddings = _normalized([[1, 0], [0.9, 0.44]])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, n = find_candidates.find_candidates(rfes_dir, "test-model", 0.5, k=100)
+        assert n == 2
+        assert len(candidates) >= 1
+
+    def test_candidates_sorted_by_similarity_descending(self, tmp_path, patch_embedding_pipeline):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        _write_rfes(rfes_dir, ["RHAIRFE-1", "RHAIRFE-2", "RHAIRFE-3"])
+
+        embeddings = _normalized([[1, 0, 0], [0.95, 0.31, 0], [0.7, 0.7, 0.14]])
+        patch_embedding_pipeline(embeddings)
+
+        candidates, _ = find_candidates.find_candidates(rfes_dir, "test-model", 0.5, 10)
+        scores = [c["similarity_score"] for c in candidates]
+        assert scores == sorted(scores, reverse=True)
