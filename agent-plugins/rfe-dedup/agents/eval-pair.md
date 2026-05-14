@@ -95,9 +95,11 @@ that should be together but were split, note this in `analysis_notes`.
 
 ## Output
 
-**Always** write a result file using the Write tool, regardless of
-match degree. The merge script needs a file for every evaluated pair
-to distinguish "evaluated and rejected" from "agent failed silently."
+**Always** write a result file using the Write tool when evaluation
+succeeds, regardless of match degree. The merge script needs a file
+for every successfully evaluated pair. If you cannot evaluate the
+pair (file not found, unparseable input), skip writing and respond
+with `failed:` instead; the orchestrator tracks failures separately.
 
 Write a JSON object to the match output path provided in the prompt:
 

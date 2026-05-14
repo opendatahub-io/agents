@@ -15,7 +15,9 @@ and intentional decomposition indicators.
 
 Format all RFE keys as markdown hyperlinks using the Jira browse URL
 from the prompt: `[RHAIRFE-NNN](<jira_browse_url>/RHAIRFE-NNN)` in
-tables, prose, and everywhere else they appear.
+tables, prose, and everywhere else they appear. Before constructing
+links, verify that `jira_browse_url` starts with `https://`. If it
+does not, respond `failed: invalid Jira URL scheme` and stop.
 
 ## Choosing a recommendation
 

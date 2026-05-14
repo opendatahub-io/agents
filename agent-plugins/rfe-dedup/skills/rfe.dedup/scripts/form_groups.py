@@ -153,7 +153,9 @@ def _try_articulation_split(members, all_match_lookup, min_degree):
                 for m in comp
                 if tuple(sorted([cut, m])) in all_match_lookup
             ]
-            return (sum(degrees) / len(degrees) if degrees else 0, len(degrees))
+            count = len(degrees)
+            avg = (sum(degrees) / count) if count else 0
+            return (count, avg)
 
         best_idx = max(range(len(comps)), key=lambda i: score(comps[i]))
         comps[best_idx] = sorted(comps[best_idx] + [cut])
@@ -256,7 +258,11 @@ def load_rfe(rfes_dir, key):
     rfe_path = rfes_dir / f"{key}.json"
     if not rfe_path.exists():
         return None
-    return json.loads(rfe_path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(rfe_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Error: corrupt RFE file {rfe_path}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def format_member(issue):
@@ -415,8 +421,17 @@ def main():
         print(f"Error: {rfes_dir} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    data = json.loads(input_path.read_text())
-    all_matches = data if isinstance(data, list) else data.get("matches", [])
+    try:
+        data = json.loads(input_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Error: invalid JSON in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    raw_matches = data if isinstance(data, list) else data.get("matches", [])
+    all_matches = [
+        m for m in raw_matches
+        if isinstance(m, dict) and "rfe_a" in m and "rfe_b" in m
+    ]
 
     edge_matches = [
         m for m in all_matches

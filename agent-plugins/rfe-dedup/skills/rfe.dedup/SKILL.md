@@ -228,8 +228,12 @@ Do NOT read pair files in the main context — each agent reads its
 own pair file, keeping the orchestration context small.
 
 Each agent writes its own match result directly to disk and responds
-with only `done`. The orchestrator does NOT need to parse agent
-response text. After each wave, count match files to track progress:
+with only `done`. If an agent fails, it responds with `failed:`
+followed by a short reason and does NOT write an output file.
+
+After each wave, check agent responses and count any that start with
+`failed:`. Track the cumulative failure count across all waves. Then
+count match files to track progress:
 
 ```bash
 python3 "$SKILL_DIR/scripts/count_artifacts.py" --dir "<run_dir>/match_results"
@@ -398,3 +402,5 @@ cross-group references, and per-group recommendations).
 
 Tell the user where the report was written and provide a brief summary
 of the findings (how many groups, notable overlaps, key recommendations).
+If any eval-pair agents failed during Steps 4 or 5a, include the
+failure count (e.g., "2 of 250 pair evaluations failed").
