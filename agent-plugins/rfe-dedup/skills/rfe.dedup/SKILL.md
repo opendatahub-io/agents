@@ -207,16 +207,16 @@ together already run in parallel, and background notifications cause
 streaming errors that break subsequent tool calls.
 
 For each pair file, invoke the `Agent` tool with:
-- `subagent_type`: `"eval-pair"`
+- `subagent_type`: `"rfe.dedup:eval-pair"`
 - `description`: a short label like `"Eval pair 001"`
 - `prompt`: a message providing the file paths, e.g.:
   `Read the pair data file at <run_dir>/pairs/pair_001.md and write
   the match result to <run_dir>/match_results/match_001.json`
 
-The `eval-pair` agent is defined in `.claude/agents/eval-pair.md` and
-knows how to read pair files, assess overlap, and write match results.
-You do NOT need to read the agent file or include its instructions in
-the prompt — Claude Code loads the agent definition automatically via
+The `eval-pair` agent is provided by this plugin and knows how to
+read pair files, assess overlap, and write match results. You do NOT
+need to read the agent file or include its instructions in the
+prompt. Claude Code loads the agent definition automatically via
 `subagent_type`.
 
 Do NOT specify a `model` parameter on Agent calls — let subagents
@@ -290,7 +290,7 @@ pairs`). If zero, skip ahead to Step 6.
 If gap pairs were found, evaluate them using the same wave-of-10
 eval-pair agent pattern as Step 4. For each file in
 `<run_dir>/gap_pairs/`, invoke the Agent tool with:
-- `subagent_type`: `"eval-pair"`
+- `subagent_type`: `"rfe.dedup:eval-pair"`
 - `description`: a short label like `"Gap eval 001"`
 - `prompt`: pointing to the gap pair file and gap match results dir:
   `Read the pair data file at <run_dir>/gap_pairs/pair_001.md and
@@ -349,7 +349,7 @@ This prints TSV lines: `<group_num>\t<member_count>`. Use these
 values when constructing agent prompts below.
 
 For each group file, invoke the `Agent` tool with:
-- `subagent_type`: `"report-group"`
+- `subagent_type`: `"rfe.dedup:report-group"`
 - `description`: a short label like `"Report group 01"`
 - `prompt`: a message providing all needed values, e.g.:
   `Read the group data file at <run_dir>/groups/group_01.md.
@@ -357,11 +357,11 @@ For each group file, invoke the `Agent` tool with:
   Jira browse URL: $JIRA_SERVER/browse.
   Write the report section to <run_dir>/reports/report_01.md`
 
-The `report-group` agent is defined in `.claude/agents/report-group.md`
-and knows how to read group files, format the report section, and write
-it to disk. You do NOT need to read the agent file or include its
-instructions in the prompt — Claude Code loads the agent definition
-automatically via `subagent_type`.
+The `report-group` agent is provided by this plugin and knows how to
+read group files, format the report section, and write it to disk.
+You do NOT need to read the agent file or include its instructions
+in the prompt. Claude Code loads the agent definition automatically
+via `subagent_type`.
 
 Do NOT specify a `model` parameter on Agent calls — let subagents
 inherit the parent model.
