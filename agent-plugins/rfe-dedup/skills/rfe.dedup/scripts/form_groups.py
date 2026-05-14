@@ -16,9 +16,12 @@ cross-group references, and ungrouped RFEs.
 
 import argparse
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
@@ -248,6 +251,8 @@ def split_incoherent_groups(groups, all_match_lookup, min_degree):
 
 
 def load_rfe(rfes_dir, key):
+    if not SAFE_KEY_RE.match(key):
+        return None
     rfe_path = rfes_dir / f"{key}.json"
     if not rfe_path.exists():
         return None

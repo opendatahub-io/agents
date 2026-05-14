@@ -181,7 +181,11 @@ def main():
     except (json.JSONDecodeError, OSError) as e:
         print(f"Error: could not read {confirmed_path}: {e}", file=sys.stderr)
         sys.exit(1)
-    matches = data if isinstance(data, list) else data.get("matches", [])
+    raw_matches = data if isinstance(data, list) else data.get("matches", [])
+    matches = [
+        m for m in raw_matches
+        if isinstance(m, dict) and "rfe_a" in m and "rfe_b" in m
+    ]
 
     edge_matches = [
         m for m in matches
@@ -254,8 +258,15 @@ def main():
             )
             continue
 
-        rfe_a = json.loads(rfe_a_path.read_text())
-        rfe_b = json.loads(rfe_b_path.read_text())
+        try:
+            rfe_a = json.loads(rfe_a_path.read_text(encoding="utf-8"))
+            rfe_b = json.loads(rfe_b_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(
+                f"Warning: could not read {key_a} or {key_b}: {e}, skipping pair",
+                file=sys.stderr,
+            )
+            continue
 
         md = format_pair_markdown(rfe_a, rfe_b, i, total)
         pair_path = gap_pairs_dir / f"pair_{i:03d}.md"
