@@ -80,9 +80,26 @@ class TestMergeMatchesMain:
         data = json.loads(output.read_text())
         assert len(data) == 4
 
-    def test_empty_match_dir_produces_empty_list(self, tmp_path, monkeypatch):
+    def test_empty_match_dir_exits_nonzero(self, tmp_path, monkeypatch):
         match_dir = tmp_path / "match_results"
         match_dir.mkdir()
+        output = tmp_path / "confirmed.json"
+
+        monkeypatch.setattr(sys, "argv", [
+            "merge_matches.py",
+            "--match-dir", str(match_dir),
+            "--output", str(output),
+        ])
+        with pytest.raises(SystemExit) as exc_info:
+            merge_matches.main()
+        assert exc_info.value.code == 1
+
+    def test_string_match_degree_filtered_not_crash(self, tmp_path, monkeypatch):
+        match_dir = tmp_path / "match_results"
+        match_dir.mkdir()
+        bad = {"rfe_a": "X-1", "rfe_b": "X-2", "match_degree": "high"}
+        (match_dir / "match_001.json").write_text(json.dumps(bad))
+        write_match(match_dir, 2, make_match_result("RHAIRFE-3", "RHAIRFE-4", 3))
         output = tmp_path / "confirmed.json"
 
         monkeypatch.setattr(sys, "argv", [
@@ -93,7 +110,8 @@ class TestMergeMatchesMain:
         merge_matches.main()
 
         data = json.loads(output.read_text())
-        assert data == []
+        assert len(data) == 1
+        assert data[0]["rfe_a"] == "RHAIRFE-3"
 
     def test_skips_malformed_file_missing_match_degree(self, tmp_path, monkeypatch, capsys):
         match_dir = tmp_path / "match_results"

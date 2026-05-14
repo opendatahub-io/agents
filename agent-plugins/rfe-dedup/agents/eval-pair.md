@@ -105,9 +105,7 @@ Write a JSON object to the match output path provided in the prompt:
 {
   "rfe_a": "RHAIRFE-...",
   "rfe_b": "RHAIRFE-...",
-  "similarity_score": 0.85,
   "match_degree": 3,
-  "match_degree_label": "Partial",
   "overlap_type": "business_need",
   "overlap_description": "Both address ...",
   "unique_to_a": "...",
@@ -122,8 +120,6 @@ Write a JSON object to the match output path provided in the prompt:
 Field definitions:
 
 - `match_degree`: integer 1-5 per the scale above
-- `match_degree_label`: one of "None", "Tangential", "Partial",
-  "Substantial", "Duplicate"
 - `overlap_type`: `"business_need"` (same customer problem),
   `"implementation_area"` (same technical area, different problems),
   or `"mixed"` (some of both)

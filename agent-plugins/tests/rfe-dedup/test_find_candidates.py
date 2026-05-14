@@ -136,3 +136,46 @@ class TestLoadRfes:
             (rfes_dir / f"RHAIRFE-{i}.json").write_text(json.dumps(issue))
         results = list(find_candidates.load_rfes(rfes_dir))
         assert len(results) == 5
+
+
+class TestLoadRfesCorruptFile:
+    def test_corrupt_rfe_json_exits_nonzero(self, tmp_path):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        (rfes_dir / "RHAIRFE-1.json").write_text("not valid json {{{{")
+        with pytest.raises(SystemExit) as exc_info:
+            list(find_candidates.load_rfes(rfes_dir))
+        assert exc_info.value.code == 1
+
+    def test_valid_rfe_after_corrupt_not_reached(self, tmp_path):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        (rfes_dir / "RHAIRFE-1.json").write_text("bad json")
+        issue = {"key": "RHAIRFE-2", "summary": "Good", "description": "", "comments": []}
+        (rfes_dir / "RHAIRFE-2.json").write_text(json.dumps(issue))
+        with pytest.raises(SystemExit):
+            list(find_candidates.load_rfes(rfes_dir))
+
+
+class TestKValidation:
+    def test_zero_k_exits_nonzero(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        monkeypatch.setattr(
+            "sys.argv",
+            ["find_candidates.py", "--rfes-dir", str(rfes_dir), "--output", str(tmp_path / "out.json"), "--k", "0"],
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            find_candidates.main()
+        assert exc_info.value.code == 1
+
+    def test_negative_k_exits_nonzero(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        monkeypatch.setattr(
+            "sys.argv",
+            ["find_candidates.py", "--rfes-dir", str(rfes_dir), "--output", str(tmp_path / "out.json"), "--k", "-5"],
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            find_candidates.main()
+        assert exc_info.value.code == 1

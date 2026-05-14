@@ -13,6 +13,7 @@ if the config file is not present.
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -30,6 +31,8 @@ PAGE_SIZE = 100
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 CACHE_TTL_HOURS = 4
+MAX_ISSUES = 5000
+SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 
 def _load_jira_cli_config():
@@ -64,6 +67,9 @@ def get_jira_config():
     if missing:
         return None, f"Missing Jira config: {', '.join(missing)}"
 
+    if not server.startswith("https://"):
+        return None, f"JIRA_SERVER must use HTTPS (got: {server.split('://')[0]}://...)"
+
     return {"server": server.rstrip("/"), "email": email, "token": token}, None
 
 
@@ -74,9 +80,10 @@ def api_call_with_retry(url, auth, params=None):
             if resp.status_code == 200:
                 return resp.json(), None
             if resp.status_code == 429:
-                retry_after = int(
-                    resp.headers.get("Retry-After", RETRY_DELAY * (attempt + 1))
-                )
+                try:
+                    retry_after = int(resp.headers.get("Retry-After", RETRY_DELAY * (attempt + 1)))
+                except (ValueError, TypeError):
+                    retry_after = RETRY_DELAY * (attempt + 1)
                 print(f"Rate limited, waiting {retry_after}s...", file=sys.stderr)
                 time.sleep(retry_after)
                 continue
@@ -207,7 +214,7 @@ def fetch_rfes(jql, config, include_comments=True):
 
         if err:
             print(f"Error fetching issues: {err}", file=sys.stderr)
-            break
+            sys.exit(1)
 
         issues = data.get("issues", [])
         if not issues:
@@ -215,6 +222,14 @@ def fetch_rfes(jql, config, include_comments=True):
 
         for issue in issues:
             all_issues.append(parse_issue(issue, include_comments))
+
+        if len(all_issues) >= MAX_ISSUES:
+            print(
+                f"Error: fetched {len(all_issues)} issues, exceeding MAX_ISSUES={MAX_ISSUES}. "
+                "Narrow your JQL scope.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
         if data.get("isLast", False) or not data.get("nextPageToken"):
             break
@@ -279,6 +294,9 @@ def main():
     rfes_dir.mkdir(parents=True, exist_ok=True)
 
     for issue in issues:
+        if not SAFE_KEY_RE.match(issue["key"]):
+            print(f"Warning: skipping issue with unsafe key: {issue['key']!r}", file=sys.stderr)
+            continue
         issue_path = rfes_dir / f"{issue['key']}.json"
         issue_path.write_text(json.dumps(issue, indent=2))
 

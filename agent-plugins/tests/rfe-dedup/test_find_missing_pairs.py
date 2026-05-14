@@ -238,6 +238,52 @@ class TestFindMissingPairsMainIntegration:
         gap_files = list((tmp_path / "gap_pairs").glob("pair_*.md"))
         assert len(gap_files) == 1
 
+    def test_corrupt_confirmed_matches_exits_nonzero(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        confirmed_path = tmp_path / "confirmed_matches.json"
+        confirmed_path.write_text("not valid json {{{{")
+
+        monkeypatch.setattr(sys, "argv", [
+            "find_missing_pairs.py",
+            "--confirmed-matches", str(confirmed_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(tmp_path),
+        ])
+        with pytest.raises(SystemExit) as exc_info:
+            find_missing_pairs.main()
+        assert exc_info.value.code == 1
+
+    def test_unsafe_key_in_missing_pair_skipped(self, tmp_path, monkeypatch, capsys):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        match_dir = tmp_path / "match_results"
+        match_dir.mkdir()
+
+        # Group of 3: unsafe, RHAIRFE-2, RHAIRFE-3.
+        # Confirmed pairs cover unsafe-2 and 2-3, leaving unsafe-3 as the missing pair.
+        # When iterating over missing pairs, the unsafe key validation should fire.
+        confirmed = [
+            make_match("../../etc/passwd", "RHAIRFE-2", 3),
+            make_match("RHAIRFE-2", "RHAIRFE-3", 3),
+        ]
+        for key in ["RHAIRFE-2", "RHAIRFE-3"]:
+            (rfes_dir / f"{key}.json").write_text(json.dumps(make_rfe(key)))
+        confirmed_path = tmp_path / "confirmed_matches.json"
+        confirmed_path.write_text(json.dumps(confirmed))
+
+        monkeypatch.setattr(sys, "argv", [
+            "find_missing_pairs.py",
+            "--confirmed-matches", str(confirmed_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(tmp_path),
+            "--match-dir", str(match_dir),
+        ])
+        find_missing_pairs.main()
+
+        captured = capsys.readouterr()
+        assert "unsafe" in captured.err.lower()
+
     def test_degree_one_already_evaluated_pair_not_repeated(self, tmp_path, monkeypatch, capsys):
         rfes_dir = tmp_path / "rfes"
         rfes_dir.mkdir()

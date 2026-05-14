@@ -24,6 +24,12 @@ MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
 MAX_COMMENTS = 3
 
+_DEGREE_LABELS = {1: "None", 2: "Tangential", 3: "Partial", 4: "Substantial", 5: "Duplicate"}
+
+
+def _degree_label(degree):
+    return _DEGREE_LABELS.get(degree, str(degree))
+
 # Groups whose average intra-group match degree (over evaluated pairs) falls
 # below this value are split by re-running BFS at a higher min-degree. This
 # catches transitive over-grouping where sub-clusters are bridged only by
@@ -245,7 +251,7 @@ def load_rfe(rfes_dir, key):
     rfe_path = rfes_dir / f"{key}.json"
     if not rfe_path.exists():
         return None
-    return json.loads(rfe_path.read_text())
+    return json.loads(rfe_path.read_text(encoding="utf-8"))
 
 
 def format_member(issue):
@@ -272,7 +278,7 @@ def format_member(issue):
 def format_pairwise(match):
     lines = [
         f"#### {match['rfe_a']} vs {match['rfe_b']}: "
-        f"match_degree {match['match_degree']} ({match.get('match_degree_label', '?')})",
+        f"match_degree {match['match_degree']} ({_degree_label(match.get('match_degree', 0))})",
         f"- **Overlap type:** {match.get('overlap_type', 'unknown')}",
         f"- **Overlap:** {match.get('overlap_description', '')}",
         f"- **Unique to {match['rfe_a']}:** {match.get('unique_to_a', '')}",
@@ -306,7 +312,7 @@ def write_group_file(group, rfes_dir, output_path):
     content = "\n\n".join(member_lines)
     content += "\n\n" + "\n\n".join(pairwise_lines)
 
-    output_path.write_text(content)
+    output_path.write_text(content, encoding="utf-8")
 
 
 def write_groups_summary(groups, all_matches, min_degree, output_path):
@@ -333,7 +339,7 @@ def write_groups_summary(groups, all_matches, min_degree, output_path):
                 "rfe_a": a,
                 "rfe_b": b,
                 "match_degree": m["match_degree"],
-                "match_degree_label": m.get("match_degree_label", ""),
+                "match_degree_label": _degree_label(m.get("match_degree", 0)),
                 "overlap_type": m.get("overlap_type"),
                 "group_a": ga,
                 "group_b": gb,
@@ -363,7 +369,7 @@ def write_groups_summary(groups, all_matches, min_degree, output_path):
         "ungrouped": ungrouped,
     }
 
-    output_path.write_text(json.dumps(summary, indent=2))
+    output_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
 def main():

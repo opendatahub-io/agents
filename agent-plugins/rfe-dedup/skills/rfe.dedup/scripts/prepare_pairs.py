@@ -8,12 +8,14 @@ is ready to be passed directly to an eval-pair agent.
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
 MAX_COMMENTS = 3
+SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 
 def truncate(text, limit):
@@ -23,10 +25,16 @@ def truncate(text, limit):
 
 
 def load_rfe(rfes_dir, key):
+    if not SAFE_KEY_RE.match(key):
+        return None
     rfe_path = rfes_dir / f"{key}.json"
     if not rfe_path.exists():
         return None
-    return json.loads(rfe_path.read_text())
+    try:
+        return json.loads(rfe_path.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Error: could not read {rfe_path}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def format_pair_markdown(rfe_a, rfe_b, similarity, index, total):
@@ -107,7 +115,7 @@ def main():
     candidate_list = candidates_data.get("candidates", [])
     total_available = len(candidate_list)
 
-    if args.max_pairs and args.max_pairs < total_available:
+    if args.max_pairs is not None and args.max_pairs < total_available:
         candidate_list = candidate_list[: args.max_pairs]
         print(
             f"Preparing {args.max_pairs} of {total_available} candidate pairs",

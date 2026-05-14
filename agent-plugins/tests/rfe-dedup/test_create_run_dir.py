@@ -49,11 +49,8 @@ class TestNormalizeName:
 
 class TestCreateRunDirMain:
     def test_creates_directory_and_prints_path(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "new rhairfe rfes",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "new rhairfe rfes"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
@@ -62,22 +59,16 @@ class TestCreateRunDirMain:
         assert created.is_dir()
 
     def test_printed_path_is_within_base_dir(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "agentdev component",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "agentdev component"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
         assert Path(output).parent == tmp_path
 
     def test_name_normalized_in_directory_name(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "New RHAIRFE RFEs",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "New RHAIRFE RFEs"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
@@ -85,12 +76,8 @@ class TestCreateRunDirMain:
 
     def test_collision_appends_suffix_1(self, tmp_path, monkeypatch, capsys):
         (tmp_path / "dedup-new-rhairfe-rfes").mkdir()
-
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "new rhairfe rfes",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "new rhairfe rfes"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
@@ -101,35 +88,24 @@ class TestCreateRunDirMain:
     def test_multiple_collisions_increment_suffix(self, tmp_path, monkeypatch, capsys):
         (tmp_path / "dedup-new-rhairfe-rfes").mkdir()
         (tmp_path / "dedup-new-rhairfe-rfes-1").mkdir()
-
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "new rhairfe rfes",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "new rhairfe rfes"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
         assert Path(output).name == "dedup-new-rhairfe-rfes-2"
 
     def test_created_directory_is_empty(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "backlog analysis",
-            "--base-dir", str(tmp_path),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "backlog analysis"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()
         assert list(Path(output).iterdir()) == []
 
     def test_base_dir_created_if_missing(self, tmp_path, monkeypatch, capsys):
-        nested_base = tmp_path / "nested" / "base"
-        monkeypatch.setattr(sys, "argv", [
-            "create_run_dir.py",
-            "--name", "test run",
-            "--base-dir", str(nested_base),
-        ])
+        monkeypatch.setattr(create_run_dir, "BASE_DIR", tmp_path / "nested" / "base")
+        monkeypatch.setattr(sys, "argv", ["create_run_dir.py", "--name", "test run"])
         create_run_dir.main()
 
         output = capsys.readouterr().out.strip()

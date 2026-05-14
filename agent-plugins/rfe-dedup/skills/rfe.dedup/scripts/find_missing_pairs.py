@@ -12,6 +12,7 @@ the threshold used by form_groups.py.
 
 import argparse
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -19,6 +20,7 @@ from pathlib import Path
 MAX_DESC_CHARS = 2000
 MAX_COMMENT_CHARS = 500
 MAX_COMMENTS = 3
+SAFE_KEY_RE = re.compile(r"^[A-Z]+-\d+$")
 
 
 def truncate(text, limit):
@@ -156,7 +158,11 @@ def main():
         print(f"Error: {rfes_dir} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    data = json.loads(confirmed_path.read_text())
+    try:
+        data = json.loads(confirmed_path.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Error: could not read {confirmed_path}: {e}", file=sys.stderr)
+        sys.exit(1)
     matches = data if isinstance(data, list) else data.get("matches", [])
 
     edge_matches = [
@@ -199,6 +205,11 @@ def main():
     total = len(missing)
     written = 0
     for i, (key_a, key_b) in enumerate(missing, 1):
+        if not SAFE_KEY_RE.match(key_a) or not SAFE_KEY_RE.match(key_b):
+            unsafe = key_a if not SAFE_KEY_RE.match(key_a) else key_b
+            print(f"Warning: skipping pair with unsafe key: {unsafe!r}", file=sys.stderr)
+            continue
+
         rfe_a_path = rfes_dir / f"{key_a}.json"
         rfe_b_path = rfes_dir / f"{key_b}.json"
 

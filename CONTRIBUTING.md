@@ -11,7 +11,7 @@ export PLUGIN=<your-plugin>
 and then:
 
 ```bash
-claude --plugin-dir ./agent-plugins/$PLUGIN
+claude --plugin-dir "./agent-plugins/$PLUGIN"
 ```
 
 Edits go live. Run `/reload-plugins` inside Claude Code to pick them up.

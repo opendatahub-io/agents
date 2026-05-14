@@ -387,3 +387,72 @@ class TestGetJiraConfig:
         config, err = fetch_rfes.get_jira_config()
         assert config["server"] == "https://override.example.com"
         assert config["email"] == "override@example.com"
+
+    def test_rejects_http_server(self, monkeypatch):
+        monkeypatch.setenv("JIRA_SERVER", "http://jira.example.com")
+        monkeypatch.setenv("JIRA_USER", "user@example.com")
+        monkeypatch.setenv("JIRA_API_TOKEN", "tok")
+        monkeypatch.setattr(fetch_rfes, "_load_jira_cli_config", lambda: (None, None))
+        config, err = fetch_rfes.get_jira_config()
+        assert config is None
+        assert "HTTPS" in err
+
+
+class TestSafeKeyRe:
+    def test_standard_key_passes(self):
+        assert fetch_rfes.SAFE_KEY_RE.match("RHAIRFE-123")
+
+    def test_single_letter_project_passes(self):
+        assert fetch_rfes.SAFE_KEY_RE.match("A-1")
+
+    def test_path_traversal_rejected(self):
+        assert not fetch_rfes.SAFE_KEY_RE.match("../../etc/passwd")
+
+    def test_key_with_slash_rejected(self):
+        assert not fetch_rfes.SAFE_KEY_RE.match("RHAIRFE-1/../../etc")
+
+    def test_lowercase_key_rejected(self):
+        assert not fetch_rfes.SAFE_KEY_RE.match("rhairfe-1")
+
+    def test_key_with_no_number_rejected(self):
+        assert not fetch_rfes.SAFE_KEY_RE.match("RHAIRFE-")
+
+    def test_empty_string_rejected(self):
+        assert not fetch_rfes.SAFE_KEY_RE.match("")
+
+
+class TestApiCallWithRetry:
+    def _make_response(self, status_code, headers=None, json_data=None):
+        class MockResponse:
+            def __init__(self, sc, hdr, jd):
+                self.status_code = sc
+                self.headers = hdr or {}
+                self._json = jd or {}
+                self.text = ""
+
+            def json(self):
+                return self._json
+
+        return MockResponse(status_code, headers, json_data)
+
+    def test_date_string_retry_after_falls_back_gracefully(self, monkeypatch):
+        responses = iter([
+            self._make_response(429, {"Retry-After": "Wed, 14 May 2026 10:00:00 GMT"}),
+            self._make_response(200, json_data={"hits": []}),
+        ])
+        monkeypatch.setattr(fetch_rfes.requests, "get", lambda *a, **kw: next(responses))
+        monkeypatch.setattr(fetch_rfes.time, "sleep", lambda s: None)
+        result, err = fetch_rfes.api_call_with_retry("https://test.com", ("u", "p"))
+        assert err is None
+        assert result == {"hits": []}
+
+    def test_integer_retry_after_used(self, monkeypatch):
+        responses = iter([
+            self._make_response(429, {"Retry-After": "5"}),
+            self._make_response(200, json_data={"ok": True}),
+        ])
+        slept = []
+        monkeypatch.setattr(fetch_rfes.requests, "get", lambda *a, **kw: next(responses))
+        monkeypatch.setattr(fetch_rfes.time, "sleep", lambda s: slept.append(s))
+        fetch_rfes.api_call_with_retry("https://test.com", ("u", "p"))
+        assert slept == [5]

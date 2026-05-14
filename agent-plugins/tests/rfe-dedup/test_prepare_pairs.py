@@ -248,3 +248,75 @@ class TestPrepairPairsMainIntegration:
         prepare_pairs.main()
 
         assert (output_dir / "match_results").is_dir()
+
+    def test_corrupt_rfe_json_exits_nonzero(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        (rfes_dir / "RHAIRFE-1.json").write_text("not valid json {{{{")
+        (rfes_dir / "RHAIRFE-2.json").write_text(json.dumps(make_rfe("RHAIRFE-2")))
+
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(
+            candidates_path,
+            [{"rfe_a": "RHAIRFE-1", "rfe_b": "RHAIRFE-2", "similarity_score": 0.9}],
+        )
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+        ])
+        with pytest.raises(SystemExit) as exc_info:
+            prepare_pairs.main()
+        assert exc_info.value.code == 1
+
+    def test_max_pairs_zero_produces_no_pairs(self, tmp_path, monkeypatch):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        for i in range(1, 4):
+            (rfes_dir / f"RHAIRFE-{i}.json").write_text(json.dumps(make_rfe(f"RHAIRFE-{i}")))
+
+        candidates = [
+            {"rfe_a": f"RHAIRFE-{i}", "rfe_b": f"RHAIRFE-{i+1}", "similarity_score": 0.9}
+            for i in range(1, 3)
+        ]
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(candidates_path, candidates)
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+            "--max-pairs", "0",
+        ])
+        prepare_pairs.main()
+
+        pair_files = list((output_dir / "pairs").glob("pair_*.md"))
+        assert len(pair_files) == 0
+
+    def test_unsafe_key_in_candidate_is_skipped(self, tmp_path, monkeypatch, capsys):
+        rfes_dir = tmp_path / "rfes"
+        rfes_dir.mkdir()
+        (rfes_dir / "RHAIRFE-1.json").write_text(json.dumps(make_rfe("RHAIRFE-1")))
+
+        candidates_path = tmp_path / "candidates.json"
+        self._write_candidates(
+            candidates_path,
+            [{"rfe_a": "RHAIRFE-1", "rfe_b": "../../etc/passwd", "similarity_score": 0.9}],
+        )
+        output_dir = tmp_path / "output"
+
+        monkeypatch.setattr(sys, "argv", [
+            "prepare_pairs.py",
+            "--candidates", str(candidates_path),
+            "--rfes-dir", str(rfes_dir),
+            "--output-dir", str(output_dir),
+        ])
+        prepare_pairs.main()
+
+        pair_files = list((output_dir / "pairs").glob("pair_*.md"))
+        assert len(pair_files) == 0

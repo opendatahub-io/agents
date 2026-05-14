@@ -15,6 +15,8 @@ import re
 import sys
 from pathlib import Path
 
+BASE_DIR = Path(".local")
+
 
 def normalize_name(name):
     """Normalize a human description to a lowercase hyphen-separated slug.
@@ -37,30 +39,27 @@ def main():
         required=True,
         help="Short human description of this analysis run (e.g. 'new rhairfe rfes')",
     )
-    parser.add_argument(
-        "--base-dir",
-        default=".local",
-        help="Base directory (default: .local)",
-    )
     args = parser.parse_args()
 
-    base = Path(args.base_dir)
     name = normalize_name(args.name)
 
-    candidate = base / name
-    if not candidate.exists():
-        candidate.mkdir(parents=True, exist_ok=True)
+    candidate = BASE_DIR / name
+    try:
+        candidate.mkdir(parents=True)
         print(candidate)
         return
+    except FileExistsError:
+        pass
 
     suffix = 1
     while True:
-        candidate = base / f"{name}-{suffix}"
-        if not candidate.exists():
-            candidate.mkdir(parents=True, exist_ok=True)
+        candidate = BASE_DIR / f"{name}-{suffix}"
+        try:
+            candidate.mkdir(parents=True)
             print(candidate)
             return
-        suffix += 1
+        except FileExistsError:
+            suffix += 1
 
 
 if __name__ == "__main__":

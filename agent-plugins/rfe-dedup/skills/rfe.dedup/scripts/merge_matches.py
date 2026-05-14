@@ -36,6 +36,14 @@ def main():
 
     match_files = sorted(glob.glob(str(match_dir / "match_*.json")))
 
+    if not match_files:
+        print(
+            f"Error: no match_*.json files found in {match_dir}. "
+            "Run the eval-pair step before merging.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     # Detect gaps in the expected sequence (match_001, match_002, ...)
     found_numbers = set()
     for f in match_files:
@@ -70,7 +78,10 @@ def main():
             print(f"Warning: skipping unreadable file {f}: {e}", file=sys.stderr)
             skipped_malformed += 1
 
-    confirmed = [m for m in all_results if m.get("match_degree", 0) >= 2]
+    confirmed = [
+        m for m in all_results
+        if isinstance(m.get("match_degree"), (int, float)) and m["match_degree"] >= 2
+    ]
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -42,6 +42,7 @@ DEFAULT_MODEL = "ibm-granite/granite-embedding-english-r2"
 DEFAULT_THRESHOLD = 0.8
 DEFAULT_K = 10
 MAX_TEXT_CHARS = 24000
+MAX_RFES = 5000
 
 
 def build_text(issue):
@@ -81,7 +82,11 @@ def load_rfes(rfes_dir):
     rfe_files = [f for f in rfe_files if f.name != "_meta.json"]
 
     for rfe_file in rfe_files:
-        issue = json.loads(rfe_file.read_text())
+        try:
+            issue = json.loads(rfe_file.read_text())
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Error: could not read {rfe_file}: {e}", file=sys.stderr)
+            sys.exit(1)
         key = issue["key"]
         text = build_text(issue)
         yield key, text
@@ -96,6 +101,14 @@ def find_candidates(rfes_dir, model_name, threshold, k):
 
     n = len(keys)
     print(f"Loaded {n} RFEs from {rfes_dir}/", file=sys.stderr)
+
+    if n > MAX_RFES:
+        print(
+            f"Error: loaded {n} RFEs, exceeding MAX_RFES={MAX_RFES}. "
+            "Narrow your JQL scope.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     if n < 2:
         print("Need at least 2 RFEs to find duplicates", file=sys.stderr)
@@ -183,6 +196,10 @@ def main():
         help=f"Max neighbors per RFE to consider (default: {DEFAULT_K})",
     )
     args = parser.parse_args()
+
+    if args.k <= 0:
+        print(f"Error: --k must be a positive integer, got {args.k}", file=sys.stderr)
+        sys.exit(1)
 
     rfes_dir = Path(args.rfes_dir)
     if not rfes_dir.is_dir():

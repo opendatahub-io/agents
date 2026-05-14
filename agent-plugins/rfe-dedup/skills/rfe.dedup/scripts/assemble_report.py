@@ -64,11 +64,11 @@ def main():
 
     sections = []
     for report_file in report_files:
-        sections.append(report_file.read_text())
+        sections.append(report_file.read_text(encoding="utf-8"))
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(header + "\n".join(sections))
+    output_path.write_text(header + "\n".join(sections), encoding="utf-8")
 
     group_reports = []
     missing_json = 0
@@ -76,7 +76,7 @@ def main():
         json_path = report_file.with_suffix(".json")
         if json_path.exists():
             try:
-                group_reports.append(json.loads(json_path.read_text()))
+                group_reports.append(json.loads(json_path.read_text(encoding="utf-8")))
             except (json.JSONDecodeError, OSError) as e:
                 print(
                     f"Warning: skipping unreadable {json_path}: {e}",
@@ -91,7 +91,7 @@ def main():
         gs_path = Path(args.groups_summary)
         if gs_path.exists():
             try:
-                groups_summary_data = json.loads(gs_path.read_text())
+                groups_summary_data = json.loads(gs_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError) as e:
                 print(
                     f"Warning: could not read {gs_path}: {e}",
@@ -113,7 +113,7 @@ def main():
             summary["group_reports"] = group_reports
 
         json_output = output_path.with_suffix(".json")
-        json_output.write_text(json.dumps(summary, indent=2))
+        json_output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         json_note = f" and {json_output}"
     else:
         json_note = ""

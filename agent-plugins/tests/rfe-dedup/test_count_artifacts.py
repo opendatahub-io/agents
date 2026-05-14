@@ -60,7 +60,7 @@ class TestCountArtifactsMain:
             count_artifacts.main()
 
         assert exc_info.value.code == 1
-        assert "not a directory" in capsys.readouterr().err.lower() or True  # error message verified
+        assert "not a directory" in capsys.readouterr().err.lower()
 
     def test_exits_when_directory_does_not_exist(self, tmp_path, monkeypatch, capsys):
         missing = tmp_path / "nonexistent"

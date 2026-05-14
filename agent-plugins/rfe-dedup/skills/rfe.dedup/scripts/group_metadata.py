@@ -34,7 +34,7 @@ def main():
         if not num_match:
             continue
         group_num = int(num_match.group(1))
-        content = gf.read_text()
+        content = gf.read_text(encoding="utf-8")
         member_count = len(re.findall(r"^### [A-Z]+-\d+:", content, re.MULTILINE))
         print(f"{group_num}\t{member_count}")
 
