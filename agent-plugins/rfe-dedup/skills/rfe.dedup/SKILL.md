@@ -207,7 +207,7 @@ together already run in parallel, and background notifications cause
 streaming errors that break subsequent tool calls.
 
 For each pair file, invoke the `Agent` tool with:
-- `subagent_type`: `"rfe.dedup:eval-pair"`
+- `subagent_type`: `"rfe-dedup:eval-pair"`
 - `description`: a short label like `"Eval pair 001"`
 - `prompt`: a message providing the file paths, e.g.:
   `Read the pair data file at <run_dir>/pairs/pair_001.md and write
@@ -290,7 +290,7 @@ pairs`). If zero, skip ahead to Step 6.
 If gap pairs were found, evaluate them using the same wave-of-10
 eval-pair agent pattern as Step 4. For each file in
 `<run_dir>/gap_pairs/`, invoke the Agent tool with:
-- `subagent_type`: `"rfe.dedup:eval-pair"`
+- `subagent_type`: `"rfe-dedup:eval-pair"`
 - `description`: a short label like `"Gap eval 001"`
 - `prompt`: pointing to the gap pair file and gap match results dir:
   `Read the pair data file at <run_dir>/gap_pairs/pair_001.md and
@@ -349,7 +349,7 @@ This prints TSV lines: `<group_num>\t<member_count>`. Use these
 values when constructing agent prompts below.
 
 For each group file, invoke the `Agent` tool with:
-- `subagent_type`: `"rfe.dedup:report-group"`
+- `subagent_type`: `"rfe-dedup:report-group"`
 - `description`: a short label like `"Report group 01"`
 - `prompt`: a message providing all needed values, e.g.:
   `Read the group data file at <run_dir>/groups/group_01.md.
