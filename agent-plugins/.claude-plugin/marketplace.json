@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-plugins-marketplace",
+  "version": "1.0.0",
+  "description": "Marketplace for agent plugins",
+  "owner": {
+    "name": "Bill Murdock"
+  },
+  "plugins": [
+    {
+      "name": "rfe-dedup",
+      "description": "Deduplicates RFEs",
+      "version": "0.1.0",
+      "source": "./rfe-dedup"
+    }
+  ]
+}

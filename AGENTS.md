@@ -76,3 +76,18 @@ Service-specific tokens: `GITHUB_TOKEN`, `SLACK_MCP_TOKEN`, `KUBE_TOKEN`, `GOOGL
 - CrewAI config: YAML-based agent/task definitions in `config/` directory
 - Package management: `uv` (Python), Go modules
 - ADRs follow `adr/template.md` (Context -> Decision -> Status -> Consequences)
+
+## Agent Plugins
+
+The agent-plugins/ directory contains Claude Code plugins under active development. The canonical source lives in this directory; do not copy files elsewhere.
+
+When you finish an edit to the plug-in:
+
+1. Confirm the change is in place.
+2. Tell the user to run `/reload-plugins` to pick up the changes.
+3. If the reload appears to succeed, verify the change:
+   - Skills: check `/help` for the namespaced entry
+   - Agents: check `/agents`
+   - Hooks: describe a trigger that should fire the hook
+   - MCP servers: check `/mcp`
+4. If `/reload-plugins` does not work or the change does not appear after reload, tell the user to exit and relaunch.
