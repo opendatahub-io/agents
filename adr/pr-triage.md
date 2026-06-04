@@ -38,7 +38,7 @@ The rubric is organized into negative signals (indicators of low-quality or bot-
 
 | ID | Signal | What to check |
 |----|--------|---------------|
-| N1 | **Single commit** | PR contains exactly one commit, suggesting a single bot generation pass with no iteration |
+| N1 | **Single commit** | PR contains exactly one commit, suggesting a single bot generation pass with no iteration. *Note: this signal is controversial. Many experienced developers rebase to a single commit or commit only when the work is complete. This signal may be dropped during feature selection (see Phase 3) if it proves unpredictive.* |
 | N2 | **No linked issue** | PR does not reference an existing issue; the change may be something nobody asked for |
 | N3 | **Hallucinated references** | PR description or comments reference HuggingFace models, repos, commits, or other artifacts that don't exist |
 | N4 | **Third-person self-reference** | PR description refers to the contributor in the third person (e.g., "The developer implemented..."), a common LLM generation pattern |
@@ -139,6 +139,8 @@ Why logistic regression specifically:
 - **Coefficients are the deliverable**: We don't need to ship sklearn at inference time. The trained coefficients become a weight vector that `score_signals.py` applies as a simple dot product + sigmoid.
 
 If the dataset is large enough (1000+ examples), we can explore gradient-boosted trees for comparison, but interpretability should win ties.
+
+**Feature selection**: After fitting, run a feature selection step to identify signals that are not worth the cost of computing. Some signals are cheap (N1 commit count is a single API call), while others are expensive (N3 hallucinated references requires outbound HTTP requests, N6 unrelated fix requires LLM judgment). Signals that don't improve predictive accuracy enough to justify their extraction cost should be removed from the pipeline entirely. This is a tool-level decision, not a per-repo decision. We run feature selection against our available training data and ship the tool with a fixed set of signals. Per-repo calibration (Phase 4) then learns weights over that fixed set; learned models will naturally downweight signals that are irrelevant for a given repo without requiring users to run their own feature selection.
 
 **Phase 4: Per-repo calibration loop**
 
@@ -264,10 +266,20 @@ This configuration can be a YAML file in the target repo (e.g., `.pr-triage.yml`
 
 ### What this tool does NOT do
 
-- **It does not block or close PRs.** It produces an assessment for a human reviewer.
+- **It does not write back to GitHub (MVP).** It produces an assessment locally for a human reviewer. It does not add labels, post comments, or modify PRs.
 - **It does not replace code review.** It triages whether a PR is worth reviewing, not whether the code is correct.
 - **It does not enforce governance policy.** Vouch systems, auto-close rules, and contributor requirements are repo-level decisions outside this tool's scope.
 - **It does not guarantee detection.** A sophisticated actor could craft a PR that passes all heuristics. The tool raises the bar, not the ceiling.
+
+### Future directions (out of scope for MVP)
+
+- **GitHub write-back**: Apply triage labels (e.g., `triage:review`, `triage:skip`) or post summary comments on PRs. This would require write scopes on the GitHub token and careful design around who controls the labeling policy. A likely first step would be a `--label` flag on `pr.scan` that applies labels after the reviewer approves the batch results, rather than fully automated labeling.
+- **Built-in sandboxing**: Users may want to run this tool in a sandbox, especially as part of a CI job. In future iterations, we could build automatic sandboxing into the tool itself, but that is out of scope for now.
+
+### Security considerations
+
+- **Minimum token scopes**: The MVP requires only read-only GitHub access. If running with a dedicated token (e.g., for CI), the minimum scope is `repo:read`. Reviewers running locally will typically use their existing `gh` auth.
+- **External reference checks**: `check_references.py` makes outbound HTTP requests to verify that artifacts referenced in PR descriptions actually exist (e.g., Hugging Face model pages). Since PR descriptions are attacker-controlled input, the script should use HEAD requests and check status codes only. It should never read, log, or report raw response bodies. This is sufficient for existence checks and avoids leaking internal responses through CI logs or future write-back features. The MVP will allow requests to any host by default, but provide a configuration option to restrict outbound checks to a host allowlist for users who want tighter controls. Additionally, the fetch script should enforce basic request hygiene: validate URL schemes (HTTPS only), disallow redirects to private/reserved IP ranges, enforce short connection and read timeouts, and cap response sizes. These checks should live in a shared utility (script or MCP server) rather than in raw `curl` calls, so they apply consistently across all reference verification.
 
 ## Status
 
