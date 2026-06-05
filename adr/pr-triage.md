@@ -47,7 +47,7 @@ The rubric is organized into negative signals (indicators of low-quality or bot-
 | N7 | **No prior contributions** | Contributor has no previously merged PRs in this repo |
 | N8 | **Bulk submission pattern** | Contributor has multiple open PRs submitted in a short time window, suggesting automated mass submission |
 | N9 | **Bot interaction spam** | PR comment history is dominated by back-and-forth with automated review bots with no substantive human discussion |
-| N10 | **Template/boilerplate description** | PR description follows a rigid LLM-generated template (e.g., "Summary / Changes / Testing" with generic content) |
+| N10 | **Template/boilerplate description** | PR description follows a rigid LLM-generated template (e.g., "Summary / Changes / Testing" with generic content). *Note: repos that use PR templates will trigger this signal on every PR, making it useless. This signal may be dropped during feature selection (see Phase 3) if it proves unpredictive.* |
 
 #### Positive signals
 
@@ -90,8 +90,8 @@ Before we have data, we assign signals to three tiers based on domain judgment:
 | Tier | Weight | Signals | Rationale |
 |------|--------|---------|-----------|
 | Strong negative | -3 | N3 (hallucinated refs), N5 (misleading validation), N6 (unrelated fix) | These are near-certain indicators of a bad PR. Any one of them is grounds for "skip." |
-| Moderate negative | -2 | N8 (bulk submission), N9 (bot spam), N10 (template description) | Strong patterns of bot-generated PRs, but occasionally appear in legitimate work |
-| Weak negative | -1 | N1 (single commit), N2 (no linked issue), N7 (no prior contributions) | Common in legitimate first-time contributions; only meaningful in combination |
+| Moderate negative | -2 | N8 (bulk submission), N9 (bot spam) | Strong patterns of bot-generated PRs, but occasionally appear in legitimate work |
+| Weak negative | -1 | N1 (single commit), N2 (no linked issue), N7 (no prior contributions), N10 (template description) | Common in legitimate first-time contributions; only meaningful in combination |
 | Weak positive | +1 | P1 (multiple commits), P2 (linked issue), P6 (docs PR), P7 (small diff) | Easy to check, mildly reassuring, but easy to fake |
 | Moderate positive | +2 | P3 (contributor track record), P4 (sustained engagement), P8 (substantive discussion) | Hard to fake, indicate real human investment |
 | Strong positive | +3 | P5 (evidence of manual testing) | The single strongest indicator that a human actually ran the code |
@@ -113,6 +113,7 @@ GitHub's PR history provides noisy but abundant proxy labels. For a target repo,
 | Still open | **exclude** | No outcome yet |
 
 Additional label-refinement heuristics:
+- Draft PRs are excluded (often used to save work in progress or trigger CI, not meaningful as review outcomes)
 - PRs closed by a bot (e.g., stale-bot) are excluded
 - PRs closed by the author themselves are excluded (withdrawn, not rejected)
 - PRs with "duplicate" or "wontfix" labels are excluded
@@ -162,7 +163,7 @@ If we add a mechanism for reviewers to flag the tool's assessments as correct or
 The scored output for a single PR:
 
 - **Readiness score**: 1 to 10 (sigmoid of weighted sum, scaled)
-- **Recommendation**: Review / Investigate / Skip (thresholded from score; default thresholds: >= 7 Review, 4-6 Investigate, <= 3 Skip)
+- **Recommendation**: Review / Investigate / Skip (thresholded from score; default thresholds: >= 7 Review, 4-6 Investigate, <= 3 Skip). "Investigate" means the signals are mixed: spend 60 seconds looking at the PR description and top signals before deciding whether to do a full review or skip it.
 - **Signal breakdown**: Each detected signal with its weight, confidence, evidence, and contribution to the final score
 - **Evidence summary**: The top 3 signals by score contribution, with specific cited evidence (e.g., "PR references model `google/gemma-4-27b-it` which does not exist on HuggingFace")
 - **Calibration source**: Whether the score used expert defaults or learned weights, and if learned, the training set size and date
@@ -278,7 +279,7 @@ This configuration can be a YAML file in the target repo (e.g., `.pr-triage.yml`
 
 ### Security considerations
 
-- **Minimum token scopes**: The MVP requires only read-only GitHub access. If running with a dedicated token (e.g., for CI), the minimum scope is `repo:read`. Reviewers running locally will typically use their existing `gh` auth.
+- **Minimum token scopes**: The MVP requires only read-only GitHub access. The minimum fine-grained PAT scopes are `pull_requests:read`, `issues:read`, `contents:read`, and `metadata:read`. Fine-grained PATs cannot be created from the CLI, but the tool can generate a pre-filled GitHub token creation URL with the correct scopes and open it in the browser, so the user just clicks "Generate token" and pastes the result. Reviewers running locally will typically use their existing `gh` auth instead.
 - **External reference checks**: `check_references.py` makes outbound HTTP requests to verify that artifacts referenced in PR descriptions actually exist (e.g., Hugging Face model pages). Since PR descriptions are attacker-controlled input, the script should use HEAD requests and check status codes only. It should never read, log, or report raw response bodies. This is sufficient for existence checks and avoids leaking internal responses through CI logs or future write-back features. The MVP will allow requests to any host by default, but provide a configuration option to restrict outbound checks to a host allowlist for users who want tighter controls. Additionally, the fetch script should enforce basic request hygiene: validate URL schemes (HTTPS only), disallow redirects to private/reserved IP ranges, enforce short connection and read timeouts, and cap response sizes. These checks should live in a shared utility (script or MCP server) rather than in raw `curl` calls, so they apply consistently across all reference verification.
 
 ## Status
@@ -292,7 +293,7 @@ Proposed
 - **Saves reviewer time**: Maintainers can quickly identify which PRs deserve attention and which are likely noise, potentially saving hours per day in high-traffic repos
 - **Provides evidence, not just opinion**: Each signal comes with specific, cited evidence, so reviewers can quickly verify the assessment rather than taking it on faith
 - **Adaptable across repos**: The heuristic rubric is configurable, so different upstream communities can tune it to their specific patterns and norms
-- **Reusable as an adversarial check in CI**: The same rubric could be run as part of an AI software factory pipeline to catch quality issues before PRs are submitted, not just after
+- **Reusable as an adversarial quality check**: The same rubric could be integrated into an AI software factory pipeline as a quality gate, similar to a code linter
 - **Builds on existing plugin patterns**: Following the rfe-dedup plugin structure means we have a proven template for the implementation
 
 ### Negative
