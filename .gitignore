@@ -29,6 +29,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+*-pycharm-support-libs/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -214,8 +215,10 @@ __marimo__/
 
 # gorilla repo for BFCL
 **/gorilla/
-# MLflow database
+# MLflow
 mlflow.db
+mlruns/
+
 
 # Local run artifacts (dedup reports, etc.)
 .local/
