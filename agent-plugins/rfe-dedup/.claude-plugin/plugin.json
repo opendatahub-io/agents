@@ -1,0 +1,8 @@
+{
+  "name": "rfe-dedup",
+  "description": "Analyze Jira RFEs for partial or complete duplicates using semantic embeddings and detailed pairwise evaluation",
+  "version": "0.1.0",
+  "author": {
+    "name": "OpenDataHub AI Engineering"
+  }
+}

@@ -219,3 +219,9 @@ __marimo__/
 mlflow.db
 mlruns/
 
+
+# Local run artifacts (dedup reports, etc.)
+.local/
+
+# Agent readiness checks
+.agentready/
