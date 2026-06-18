@@ -20,7 +20,7 @@ charset-normalizer==3.4.2
 chevron==0.14.0
 click==8.2.1
 comm==0.2.3
-cryptography==45.0.5
+cryptography==46.0.5
 cyclopts==3.22.2
 datasets==4.0.0
 debugpy==1.8.15
