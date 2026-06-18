@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "llama-stack==0.2.22",
-    "mcp==1.14.1",
+    "mcp==1.23.0",
     "ollama==0.6.0",
     "openai==1.109.1",
     "dotenv==0.9.9",
