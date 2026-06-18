@@ -85,7 +85,7 @@ lomond==0.3.3
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 matplotlib-inline==0.1.7
-mcp==1.12.0
+mcp==1.23.0
 mcp-streamablehttp-proxy==0.2.0
 mdurl==0.1.2
 mpmath==1.3.0
