@@ -1,0 +1,20 @@
+# Local development dependencies
+# Install with: uv pip install -r requirements.txt
+
+# Core dependencies
+fastmcp
+httpx
+starlette
+mcp
+python-dotenv
+openai-agents
+litellm
+tenacity
+
+# MLflow for local development (3.9.0+)
+mlflow
+
+# Notebook dependencies
+ipykernel
+ipywidgets
+

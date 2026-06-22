@@ -1,0 +1,143 @@
+# OpenShift Template for NPS Agent
+#
+# Deploy with:
+#   oc process -f nps-agent.yaml \
+#     -p NAMESPACE="$NAMESPACE" \
+#     -p MLFLOW_TRACKING_URI="$MLFLOW_TRACKING_URI" \
+#     -p MLFLOW_WORKSPACE="$MLFLOW_WORKSPACE" \
+#     -p MLFLOW_EXPERIMENT_NAME="$MLFLOW_EXPERIMENT_NAME" \
+#     | oc apply -f -
+#
+# Secret is created manually via:
+#   oc create secret generic nps-agent-secrets \
+#     --from-literal=OPENAI_API_KEY='...' \
+#     --from-literal=NPS_API_KEY='...' \
+#     -n $NAMESPACE
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: nps-agent-template
+parameters:
+  - name: NAMESPACE
+    description: Your OpenShift project name (e.g., nps-agent-yourname)
+    required: true
+  - name: MLFLOW_TRACKING_URI
+    description: Your RHOAI MLflow URL (e.g., https://data-science-gateway.apps.<cluster>/mlflow/)
+    required: true
+  - name: MLFLOW_EXPERIMENT_NAME
+    description: Experiment name in MLflow
+    value: nps-agent
+objects:
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: nps-agent
+      namespace: ${NAMESPACE}
+    spec:
+      source:
+        type: Git
+        git:
+          uri: https://github.com/Nehanth/nps_agent.git
+          ref: main
+        contextDir: 2_deploy
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            namespace: openshift
+            name: python:3.12-ubi9
+      output:
+        to:
+          kind: ImageStreamTag
+          name: nps-agent:latest
+      triggers:
+        - type: ConfigChange
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: nps-agent
+      namespace: ${NAMESPACE}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nps-agent
+      namespace: ${NAMESPACE}
+      labels:
+        app: nps-agent
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: nps-agent
+      template:
+        metadata:
+          labels:
+            app: nps-agent
+        spec:
+          containers:
+            - name: nps-agent
+              image: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/nps-agent:latest
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              envFrom:
+                - secretRef:
+                    name: nps-agent-secrets
+              env:
+                - name: MLFLOW_TRACKING_URI
+                  value: "${MLFLOW_TRACKING_URI}"
+                - name: MLFLOW_TRACKING_AUTH
+                  value: "kubernetes"
+                - name: MLFLOW_EXPERIMENT_NAME
+                  value: "${MLFLOW_EXPERIMENT_NAME}"
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              readinessProbe:
+                httpGet:
+                  path: /ping
+                  port: 8080
+                initialDelaySeconds: 30
+                periodSeconds: 10
+              livenessProbe:
+                httpGet:
+                  path: /ping
+                  port: 8080
+                initialDelaySeconds: 60
+                periodSeconds: 30
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: nps-agent
+      namespace: ${NAMESPACE}
+      labels:
+        app: nps-agent
+    spec:
+      selector:
+        app: nps-agent
+      ports:
+        - port: 8080
+          targetPort: 8080
+          protocol: TCP
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: nps-agent
+      namespace: ${NAMESPACE}
+      labels:
+        app: nps-agent
+      annotations:
+        haproxy.router.openshift.io/timeout: 300s
+    spec:
+      to:
+        kind: Service
+        name: nps-agent
+      port:
+        targetPort: 8080
+      tls:
+        termination: edge

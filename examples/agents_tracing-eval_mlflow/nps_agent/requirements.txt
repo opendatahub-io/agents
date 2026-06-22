@@ -1,0 +1,14 @@
+# Deployment dependencies (used by s2i build)
+# Note: mlflow is installed separately - see comments below
+fastmcp
+httpx
+starlette
+mcp
+python-dotenv
+openai-agents
+litellm
+tenacity
+
+# MLflow: The version depends on your environment:
+# - For RHOAI deployment: pip install "git+https://github.com/opendatahub-io/mlflow@master"
+# - For local development: pip install mlflow (version 3.9.0+)

@@ -14,14 +14,15 @@ The agent and MCP server are based on: https://github.com/The-AI-Alliance/llama-
 ## Choose a Notebook
 
 The first two notebooks run the same NPS agent and evaluation — pick one based on the tracing approach you want.
-The third notebook demonstrates the same NPS agent built with LangGraph, and uses `mlflow.langchain.autolog()` for automatic tracing.
+The remaining notebooks demonstrate alternative frameworks and judge configurations.
 
 | Notebook | Tracing Method | Description |
-|----------|---------------|-------------|
-| `nps_agent.ipynb` | MLflow native (`@mlflow.trace`) | Uses MLflow's built-in tracing with a local SQLite backend |
-| `nps_otel.ipynb` | OpenTelemetry (OTLP export) | Uses OTel SDK to create spans, exported to MLflow server via OTLP/HTTP |
-| `Nps_agent_langchain_autolog.ipynb` | MLflow autolog (`mlflow.langchain.autolog`) | LangGraph ReAct agent example using automatic tracing, conversation memory, and session tracking |
-| `nps_agent_custom_judge.ipynb` | Uses custom provider for agent-judge and traces the judge's own LLM calls |
+|----------|----------------|-------------|
+| `nps_agent.ipynb` | MLflow native (`@mlflow.trace`) | MLflow built-in tracing with a local SQLite backend |
+| `nps_otel.ipynb` | OpenTelemetry (OTLP export) | OTel SDK spans exported to MLflow server via OTLP/HTTP |
+| `nps_agent_openai_direct.ipynb` | MLflow native | Same agent using the OpenAI SDK directly instead of LlamaStack |
+| `nps_agent_custom_judge.ipynb` | MLflow native | Custom judge provider; traces the judge's own LLM calls |
+| `Nps_agent_langchain_autolog.ipynb` | MLflow autolog | LangGraph ReAct agent with automatic tracing, memory, and session tracking |
 
 **Option A — MLflow Native** (`nps_agent.ipynb`): Uses `@mlflow.trace` decorators and `mlflow.start_span()` to capture traces directly into a local SQLite database. No server required.
 
@@ -53,7 +54,7 @@ User Query → LlamaStack → MCP Server → NPS API
 
 3. **Set OpenAI API key** (for Agent-as-a-Judge)
 
-   Make sure `OPENAI_API_KEY` is set in the `.env` file in the parent directory (`agents_tracing-eval_mlflow/.env`):
+   Make sure `OPENAI_API_KEY` is set in the parent directory's `.env` file (`agents_tracing-eval_mlflow/.env`):
    ```
    OPENAI_API_KEY=your_key
    ```
@@ -71,4 +72,51 @@ User Query → LlamaStack → MCP Server → NPS API
    Then open and run all cells. View traces at http://localhost:5001.
 
    **Option C — LangGraph** (`Nps_agent_langchain_autolog.ipynb`):
-   Open and run all cells. Traces are captured automatically via `mlflow.langchain.autolog()` and saved to a local `mlflow.db` file. See [langgraph-README.md](langgraph-README.md) for full setup and details.
+   Open and run all cells. See [langgraph-README.md](langgraph-README.md) for full setup.
+
+---
+
+## End-to-End Lifecycle Tutorials
+
+The subdirectories below walk through the full journey from local development to
+production deployment and monitoring on RHOAI. By following these tutorials in
+order you will learn how to:
+
+- Instrument an agent for full observability over each action it takes
+- Evaluate an agent during development to catch errors before they reach users
+- Deploy an agent to production as an HTTP service and run inference against it
+- Observe and evaluate production performance to catch behavioral drift
+
+| Directory | Tutorial | Description |
+|-----------|----------|-------------|
+| [`1_develop/`](./1_develop/README.md) | Develop | Instrument and evaluate the agent locally using MLflow tracing and Agent-as-a-Judge |
+| [`2_deploy/`](./2_deploy/README.md) | Deploy | Package and deploy the agent to RHOAI as an HTTP service via S2I build |
+| [`3_observe/`](./3_observe/README.md) | Observe | Run outer-loop evaluations against the deployed agent in production |
+
+Each tutorial stands on its own if you only want to learn about a specific stage.
+
+### Prerequisites
+
+**For `1_develop/`:**
+- An OpenAI-compatible endpoint (OpenAI, vLLM, llama.cpp, Ollama, etc.)
+- Space to run a local MLflow server (~5 MB)
+
+**For `2_deploy/` and `3_observe/`:**
+- An OpenAI-compatible endpoint accessible to your cluster
+- RHOAI with the MLflow server enabled
+- OpenShift CLI (`oc`)
+
+### Setup
+
+```bash
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create a virtual environment and install dependencies for the stage you want
+uv venv --python 3.12
+uv pip install -r 1_develop/requirements.txt   # or 2_deploy/requirements.txt
+
+# Configure environment variables
+cp env.sample .env        # then edit .env with your API keys and settings
+source .venv/bin/activate
+```
