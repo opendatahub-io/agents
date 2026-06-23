@@ -1,6 +1,8 @@
 import os
 import shutil
 import argparse
+from collections.abc import Generator, AsyncGenerator
+from queue import Queue
 
 import anyio
 
@@ -11,11 +13,11 @@ from dotenv import load_dotenv
 import mlflow
 from mlflow.models import set_model
 from mlflow.pyfunc import ResponsesAgent
-from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
-from mlflow.genai.agent_server import AgentServer, invoke
+from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse, ResponsesAgentStreamEvent
+from mlflow.genai.agent_server import AgentServer, invoke, stream
 
 from openai import AsyncClient
-from agents import Agent, Runner, set_default_openai_client
+from agents import Agent, Runner, StreamEvent, set_default_openai_client
 from agents.mcp import MCPServerStdio
 
 
@@ -46,13 +48,14 @@ AGENT_INSTRUCTIONS = (
 )
 
 
+# Configure OpenAI-compatible endpoint
+async_client = AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
+set_default_openai_client(client=async_client)
+
+
 async def run_nps_agent(prompt) -> str:
     """Run the NPS agent with MCP tools and return the text response."""
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
-        # Configure OpenAI-compatible endpoint
-        async_client = AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
-        set_default_openai_client(client=async_client)
-
         # Create the agent
         agent = Agent(
             name=AGENT_NAME,
@@ -64,6 +67,23 @@ async def run_nps_agent(prompt) -> str:
         # Run the agent
         result = await Runner.run(agent, prompt)
         return result.final_output
+
+
+async def run_streaming_nps_agent(prompt) -> AsyncGenerator[StreamEvent, None]:
+    """Run the NPS agent with MCP tools and stream the text response."""
+    async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
+        # Create the agent
+        agent = Agent(
+            name=AGENT_NAME,
+            instructions=AGENT_INSTRUCTIONS,
+            mcp_servers=[mcp_server],
+            model=OPENAI_MODEL_NAME,
+        )
+
+        # Run the agent with streaming
+        streaming_result = Runner.run_streamed(agent, prompt)
+        async for event in streaming_result.stream_events():
+            yield event
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +98,46 @@ class NPSResponsesAgent(ResponsesAgent):
             result = f"Error: {e}"
         return ResponsesAgentResponse(
             output=[self.create_text_output_item(text=result, id="msg_1")]
+        )
+
+    def predict_stream(self, request: ResponsesAgentRequest) -> Generator[ResponsesAgentStreamEvent, None, None]:
+
+        QMSG_EVENT = "event"
+        QMSG_ERROR = "error"
+        QMSG_DONE = "done"
+        stream_event_queue = Queue()
+
+        async def _event_queue_producer():
+            try:
+                async for event in run_streaming_nps_agent(request.input):
+                    stream_event_queue.put((QMSG_EVENT, event))
+            except Exception as e:
+                stream_event_queue.put((QMSG_ERROR, str(e)))
+            finally:
+                stream_event_queue.put((QMSG_DONE, None))
+
+        with anyio.from_thread.start_blocking_portal() as portal:
+            task_future = portal.start_task_soon(_event_queue_producer)
+
+            accumulated: list[str] = []
+            while True:
+                kind, value = stream_event_queue.get()
+                if kind == QMSG_DONE:
+                    break
+                if kind == QMSG_ERROR:
+                    yield ResponsesAgentStreamEvent(**self.create_text_delta(f"Error: {value}", "msg_1"))
+                    break
+                event: StreamEvent = value
+                if hasattr(event, "data") and hasattr(event.data, "delta"):
+                    delta = event.data.delta
+                    accumulated.append(delta)
+                    yield ResponsesAgentStreamEvent(**self.create_text_delta(delta, "msg_1"))
+
+            task_future.result()
+
+        yield ResponsesAgentStreamEvent(
+            type="response.output_item.done",
+            item=self.create_text_output_item(text="".join(accumulated), id="msg_1"),
         )
 
 
@@ -96,8 +156,22 @@ agent_server = AgentServer("ResponsesAgent")
 
 
 @invoke()
-def handle_invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-    return nps_responses_agent.predict(request)
+async def handle_invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
+    return await anyio.to_thread.run_sync(nps_responses_agent.predict, request)
+
+
+@stream()
+async def handle_stream(request: ResponsesAgentRequest) -> AsyncGenerator[ResponsesAgentStreamEvent, None]:
+    _DONE = object()
+    event_generator = nps_responses_agent.predict_stream(request)
+    try:
+        while True:
+            responses_agent_event = await anyio.to_thread.run_sync(next, event_generator, _DONE)
+            if responses_agent_event is _DONE:
+                break
+            yield responses_agent_event
+    finally:
+        event_generator.close()
 
 
 if __name__ == "__main__":
