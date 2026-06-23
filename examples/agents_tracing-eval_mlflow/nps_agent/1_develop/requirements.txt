@@ -12,7 +12,7 @@ litellm
 tenacity
 
 # MLflow for local development (3.9.0+)
-mlflow
+mlflow>=3.9.0,<3.10  #  A behavioral change to @mlflow.trace makes this demo not work as expected for mlflow>=3.10.
 
 # Notebook dependencies
 ipykernel
