@@ -43,7 +43,7 @@ The rubric is organized into negative signals (indicators of low-quality or bot-
 | N3 | **Hallucinated references** | PR description or comments reference HuggingFace models, repos, commits, or other artifacts that don't exist |
 | N4 | **Third-person self-reference** | PR description refers to the contributor in the third person (e.g., "The developer implemented..."), a common LLM generation pattern |
 | N5 | **Misleading validation claims** | PR claims the fix was validated or confirmed by specific people without evidence, or points to tests that don't exercise real-world scenarios |
-| N6 | **Unrelated fix** | The proposed changes don't logically address the stated problem; the real fix is elsewhere |
+| N6 | **Unrelated fix** | The proposed changes don't logically address the stated problem; the real fix is elsewhere. *Note: this signal is limited to what can be inferred from the diff alone, since the tool must not clone the PR branch (see Security considerations).* |
 | N7 | **No prior contributions** | Contributor has no previously merged PRs in this repo |
 | N8 | **Bulk submission pattern** | Contributor has multiple open PRs submitted in a short time window, suggesting automated mass submission |
 | N9 | **Bot interaction spam** | PR comment history is dominated by back-and-forth with automated review bots with no substantive human discussion |
@@ -220,13 +220,13 @@ Invoked as `/pr.triage <PR-URL-or-number>`. Reviews a single PR and produces a s
 5. Compute readiness score from signal assessments
 6. Output the scored assessment with evidence
 
-**Data sources (all via `gh` CLI):**
+**Data sources (all via GitHub API, never via `git clone`):**
 
 - `gh pr view` for PR metadata
-- `gh pr diff` for the changeset
+- `gh pr diff` for the changeset (fetched as text, not checked out)
 - `gh pr checks` for CI status
 - `gh api` for commit history, contributor activity, linked issues, and comment threads
-- `curl` or `python requests` for verifying external references (HuggingFace model existence, etc.)
+- `check_references.py` for verifying external references (Hugging Face model existence, etc.)
 
 #### `pr.scan` (secondary)
 
@@ -279,6 +279,7 @@ This configuration can be a YAML file in the target repo (e.g., `.pr-triage.yml`
 
 ### Security considerations
 
+- **No cloning of PR branches**: The tool must never `git clone` or `git checkout` a PR branch. Malicious PRs can contain hook configurations (e.g., `.claude/settings.json` with auto-executing scripts) that trigger when AI coding tools operate in a cloned directory. This is an active supply chain attack vector. All PR data must be fetched via the GitHub API (`gh pr view`, `gh pr diff`, `gh api`), which returns text over HTTPS with no local code execution. This limits the depth of some signals (particularly N6, which cannot access broader codebase context beyond the diff) but is a hard security constraint.
 - **Minimum token scopes**: The MVP requires only read-only GitHub access. The minimum fine-grained PAT scopes are `pull_requests:read`, `issues:read`, `contents:read`, and `metadata:read`. Fine-grained PATs cannot be created from the CLI, but the tool can generate a pre-filled GitHub token creation URL with the correct scopes and open it in the browser, so the user just clicks "Generate token" and pastes the result. Reviewers running locally will typically use their existing `gh` auth instead.
 - **External reference checks**: `check_references.py` makes outbound HTTP requests to verify that artifacts referenced in PR descriptions actually exist (e.g., Hugging Face model pages). Since PR descriptions are attacker-controlled input, the script should use HEAD requests and check status codes only. It should never read, log, or report raw response bodies. This is sufficient for existence checks and avoids leaking internal responses through CI logs or future write-back features. The MVP will allow requests to any host by default, but provide a configuration option to restrict outbound checks to a host allowlist for users who want tighter controls. Additionally, the fetch script should enforce basic request hygiene: validate URL schemes (HTTPS only), disallow redirects to private/reserved IP ranges, enforce short connection and read timeouts, and cap response sizes. These checks should live in a shared utility (script or MCP server) rather than in raw `curl` calls, so they apply consistently across all reference verification.
 
