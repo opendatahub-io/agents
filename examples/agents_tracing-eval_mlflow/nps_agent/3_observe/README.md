@@ -5,7 +5,7 @@ This tutorial will walk you through the agent observation process with MLflow.
 In this tutorial, you'll learn how to:
 
 - Capture traces from a running agent deployed on OpenShift AI into MLflow
-- Build evalaution scorers and LLM-judge to evaluate the agent application
+- Build evaluation scorers and LLM-judge to evaluate the agent application
 - Perform outer loop evaluations on the agent application traces and review the results
 - Share evaluation results with expert reviewers for feedback
 

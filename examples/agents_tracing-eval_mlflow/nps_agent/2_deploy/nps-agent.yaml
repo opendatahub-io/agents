@@ -37,9 +37,9 @@ objects:
       source:
         type: Git
         git:
-          uri: https://github.com/Nehanth/nps_agent.git
+          uri: https://github.com/opendatahub-io/agents.git
           ref: main
-        contextDir: 2_deploy
+        contextDir: examples/agents_tracing-eval_mlflow/nps_agent/2_deploy
       strategy:
         type: Source
         sourceStrategy:
