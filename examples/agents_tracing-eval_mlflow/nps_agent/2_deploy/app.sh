@@ -30,9 +30,4 @@ mlflow.pyfunc.save_model(python_model='npsagent.py', path='$MODEL_DIR')
 echo "Traces:    ${MLFLOW_TRACKING_URI:-(not set)}"
 echo "Listening: http://$HOST:$PORT"
 
-exec mlflow models serve \
-    -m "$MODEL_DIR" \
-    -p "$PORT" \
-    --host "$HOST" \
-    --timeout 300 \
-    --env-manager local
+exec $PYTHON "${MODEL_DIR}/npsagent.py" --host "$HOST" --port "$PORT"
