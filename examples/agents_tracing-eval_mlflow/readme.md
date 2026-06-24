@@ -20,6 +20,7 @@ A conversational agent that queries the National Parks Service API.
 - **Tools**: MCP server with NPS API tools (search_parks, get_park_events, get_park_alerts, etc.)
 - **LLM**: Llama Stack → OpenAI (also OpenAI directly via LangGraph)
 - **Source**: [llama-stack-examples](https://github.com/The-AI-Alliance/llama-stack-examples/blob/main/notebooks/01-responses/README_NPS.md)
+- **Lifecycle tutorials**: End-to-end walkthrough from local development to production deployment and monitoring in `1_develop/`, `2_deploy/`, and `3_observe/`
 
 ### Log Monitor Agent (`log_monitor/`)
 
@@ -59,6 +60,8 @@ Both agents were enhanced with:
 4. **Run the notebooks** (choose MLflow native, OpenTelemetry, or LangGraph for each agent)
    - `nps_agent/nps_agent.ipynb` - Chat agent (MLflow native)
    - `nps_agent/nps_otel.ipynb` - Chat agent (OpenTelemetry)
+   - `nps_agent/nps_agent_openai_direct.ipynb` - Chat agent (OpenAI SDK direct)
+   - `nps_agent/nps_agent_custom_judge.ipynb` - Chat agent (custom judge provider)
    - `nps_agent/Nps_agent_langchain_autolog.ipynb` - Chat agent (LangGraph + MLflow autolog)
    - `log_monitor/log_monitor_agent.ipynb` - Event-driven agent (MLflow native)
    - `log_monitor/log_monitor_agent_otel.ipynb` - Event-driven agent (OpenTelemetry)
@@ -76,11 +79,15 @@ Both agents were enhanced with:
 
 ```
 ├── nps_agent/
-│   ├── nps_agent.ipynb        # Chat agent notebook (MLflow native)
-│   ├── nps_otel.ipynb         # Chat agent notebook (OpenTelemetry)
-│   ├── nps_mcp_server.py      # MCP server for NPS API
-│   ├── Nps_agent_langchain_autolog.ipynb    # Chat 
-server for NPS API
+│   ├── nps_agent.ipynb                    # Chat agent (MLflow native)
+│   ├── nps_otel.ipynb                     # Chat agent (OpenTelemetry)
+│   ├── nps_agent_openai_direct.ipynb      # Chat agent (OpenAI SDK direct)
+│   ├── nps_agent_custom_judge.ipynb       # Chat agent (custom judge provider)
+│   ├── Nps_agent_langchain_autolog.ipynb  # Chat agent (LangGraph + MLflow autolog)
+│   ├── nps_mcp_server.py                  # MCP server for NPS API
+│   ├── 1_develop/                         # Local development & evaluation tutorial
+│   ├── 2_deploy/                          # RHOAI production deployment tutorial
+│   ├── 3_observe/                         # Production observation & evaluation tutorial
 │   └── readme.md
 ├── log_monitor/
 │   ├── log_monitor_agent.ipynb      # Event-driven agent notebook (MLflow native)

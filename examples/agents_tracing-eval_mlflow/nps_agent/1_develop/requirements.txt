@@ -1,0 +1,20 @@
+# Local development dependencies
+# Install with: uv pip install -r requirements.txt
+
+# Core dependencies
+fastmcp
+httpx
+starlette
+mcp
+python-dotenv
+openai-agents
+litellm
+tenacity
+
+# MLflow for local development (3.9.0+)
+mlflow>=3.9.0,<3.10  #  A behavioral change to @mlflow.trace makes this demo not work as expected for mlflow>=3.10.
+
+# Notebook dependencies
+ipykernel
+ipywidgets
+
