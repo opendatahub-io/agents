@@ -28,10 +28,10 @@ if UV_EXE is None:
     raise ValueError("Requires 'uv' executable for MCP server environment management.")
 
 MCP_ARGS = ["run", "fastmcp", "run", "./nps_mcp_server.py"]
-MCP_ENV = {**os.environ, "NPS_API_KEY": os.environ.get("NPS_API_KEY", "")}
+MCP_ENV = {**os.environ, "NPS_API_KEY": os.environ.get("NPS_API_KEY", "DEMO_KEY")}
 MCP_PARAMS = {"command": UV_EXE, "args": MCP_ARGS, "env": MCP_ENV}
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "EMPTY")
 OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", "gpt-4o")
 
 
