@@ -22,4 +22,4 @@ export MLFLOW_EXPERIMENT_NAME="${MLFLOW_EXPERIMENT_NAME:-nps-agent}"
 echo "Traces:    ${MLFLOW_TRACKING_URI:-(not set)}"
 echo "Listening: http://$HOST:$PORT"
 
-exec $PYTHON "npsagent.py" --host "$HOST" --port "$PORT"
+exec "$PYTHON" "npsagent.py" --host "$HOST" --port "$PORT"
