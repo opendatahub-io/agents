@@ -1,5 +1,8 @@
 import asyncio
 import os
+import argparse
+
+import uvicorn
 
 import nest_asyncio
 nest_asyncio.apply()
@@ -11,6 +14,7 @@ import mlflow
 from mlflow.models import set_model
 from mlflow.pyfunc import ResponsesAgent
 from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
+from mlflow.genai.agent_server import AgentServer, invoke
 
 from openai import AsyncClient
 from agents import Agent, Runner, set_default_openai_client
@@ -53,7 +57,7 @@ async def run_nps_agent(prompt) -> str:
 
 
 # ---------------------------------------------------------------------------
-# MLflow ResponsesAgent — wraps run_nps_agent into an HTTP API for deployment
+# MLflow ResponsesAgent — wraps run_nps_agent to provide tracing
 # ---------------------------------------------------------------------------
 class NPSResponsesAgent(ResponsesAgent):
     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
@@ -65,8 +69,29 @@ class NPSResponsesAgent(ResponsesAgent):
             output=[self.create_text_output_item(text=result, id="msg_1")]
         )
 
+
 # ---------------------------------------------------------------------------
 # MLflow model registration
 # ---------------------------------------------------------------------------
+nps_responses_agent = NPSResponsesAgent()
 mlflow.openai.autolog()
-set_model(NPSResponsesAgent())
+set_model(nps_responses_agent)
+
+
+# ---------------------------------------------------------------------------
+# MLflow AgentServer  (Provides HTTP API that supports SSE via FastAPI)
+# ---------------------------------------------------------------------------
+agent_server = AgentServer("ResponsesAgent")
+
+
+@invoke()
+def handle_invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
+    return nps_responses_agent.predict(request)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+    uvicorn.run(agent_server.app, host=args.host, port=args.port)

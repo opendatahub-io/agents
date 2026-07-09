@@ -8,3 +8,4 @@ mlflow @ git+https://github.com/opendatahub-io/mlflow@master
 litellm
 nest_asyncio
 uv
+uvicorn
