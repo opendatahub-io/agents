@@ -7,6 +7,6 @@ dependencies = [
     "greenlet>=3.2.4",
     "litellm>=1.84.0",
     "llama-stack>=0.2.20",
-    "mcp>=1.13.1",
+    "mcp>=1.27.2",
     "sqlalchemy>=2.0.43",
 ]
