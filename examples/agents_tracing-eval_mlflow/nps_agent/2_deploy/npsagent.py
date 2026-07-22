@@ -19,6 +19,7 @@ from mlflow.genai.agent_server import AgentServer, invoke, stream
 from openai import AsyncClient
 from agents import Agent, Runner, StreamEvent, set_default_openai_client
 from agents.mcp import MCPServerStdio
+from agents.models.openai_provider import OpenAIChatCompletionsModel
 
 
 # ---------------------------------------------------------------------------
@@ -53,14 +54,13 @@ async def run_nps_agent(prompt) -> str:
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
         # Configure OpenAI-compatible endpoint
         async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
-            set_default_openai_client(client=async_client)
 
             # Create the agent
             agent = Agent(
                 name=AGENT_NAME,
                 instructions=AGENT_INSTRUCTIONS,
                 mcp_servers=[mcp_server],
-                model=OPENAI_MODEL_NAME,
+                model=OpenAIChatCompletionsModel(model=OPENAI_MODEL_NAME, openai_client=async_client)
             )
 
             # Run the agent
@@ -73,14 +73,13 @@ async def run_streaming_nps_agent(prompt) -> AsyncGenerator[StreamEvent, None]:
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
         # Configure OpenAI-compatible endpoint
         async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
-            set_default_openai_client(client=async_client)
 
             # Create the agent
             agent = Agent(
                 name=AGENT_NAME,
                 instructions=AGENT_INSTRUCTIONS,
                 mcp_servers=[mcp_server],
-                model=OPENAI_MODEL_NAME,
+                model=OpenAIChatCompletionsModel(model=OPENAI_MODEL_NAME, openai_client=async_client)
             )
 
             # Run the agent with streaming
@@ -180,7 +179,7 @@ async def handle_stream(request: ResponsesAgentRequest) -> AsyncGenerator[Respon
                 break
             yield responses_agent_event
     finally:
-        event_generator.close()
+        await anyio.to_thread.run_sync(event_generator.close)
 
 
 if __name__ == "__main__":
