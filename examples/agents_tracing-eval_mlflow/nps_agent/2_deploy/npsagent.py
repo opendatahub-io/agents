@@ -48,42 +48,45 @@ AGENT_INSTRUCTIONS = (
 )
 
 
-# Configure OpenAI-compatible endpoint
-async_client = AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
-set_default_openai_client(client=async_client)
-
-
 async def run_nps_agent(prompt) -> str:
     """Run the NPS agent with MCP tools and return the text response."""
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
-        # Create the agent
-        agent = Agent(
-            name=AGENT_NAME,
-            instructions=AGENT_INSTRUCTIONS,
-            mcp_servers=[mcp_server],
-            model=OPENAI_MODEL_NAME,
-        )
+        # Configure OpenAI-compatible endpoint
+        async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
+            set_default_openai_client(client=async_client)
 
-        # Run the agent
-        result = await Runner.run(agent, prompt)
-        return result.final_output
+            # Create the agent
+            agent = Agent(
+                name=AGENT_NAME,
+                instructions=AGENT_INSTRUCTIONS,
+                mcp_servers=[mcp_server],
+                model=OPENAI_MODEL_NAME,
+            )
+
+            # Run the agent
+            result = await Runner.run(agent, prompt)
+            return result.final_output
 
 
 async def run_streaming_nps_agent(prompt) -> AsyncGenerator[StreamEvent, None]:
     """Run the NPS agent with MCP tools and stream the text response."""
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
-        # Create the agent
-        agent = Agent(
-            name=AGENT_NAME,
-            instructions=AGENT_INSTRUCTIONS,
-            mcp_servers=[mcp_server],
-            model=OPENAI_MODEL_NAME,
-        )
+        # Configure OpenAI-compatible endpoint
+        async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
+            set_default_openai_client(client=async_client)
 
-        # Run the agent with streaming
-        streaming_result = Runner.run_streamed(agent, prompt)
-        async for event in streaming_result.stream_events():
-            yield event
+            # Create the agent
+            agent = Agent(
+                name=AGENT_NAME,
+                instructions=AGENT_INSTRUCTIONS,
+                mcp_servers=[mcp_server],
+                model=OPENAI_MODEL_NAME,
+            )
+
+            # Run the agent with streaming
+            streaming_result = Runner.run_streamed(agent, prompt)
+            async for event in streaming_result.stream_events():
+                yield event
 
 
 # ---------------------------------------------------------------------------
@@ -120,13 +123,18 @@ class NPSResponsesAgent(ResponsesAgent):
             task_future = portal.start_task_soon(_event_queue_producer)
 
             accumulated: list[str] = []
+            finished_without_error = True
             while True:
+
                 kind, value = stream_event_queue.get()
                 if kind == QMSG_DONE:
                     break
+
                 if kind == QMSG_ERROR:
                     yield ResponsesAgentStreamEvent(**self.create_text_delta(f"Error: {value}", "msg_1"))
+                    finished_without_error = False
                     break
+
                 event: StreamEvent = value
                 if hasattr(event, "data") and hasattr(event.data, "delta"):
                     delta = event.data.delta
@@ -135,10 +143,11 @@ class NPSResponsesAgent(ResponsesAgent):
 
             task_future.result()
 
-        yield ResponsesAgentStreamEvent(
-            type="response.output_item.done",
-            item=self.create_text_output_item(text="".join(accumulated), id="msg_1"),
-        )
+        if finished_without_error:
+            yield ResponsesAgentStreamEvent(
+                type="response.output_item.done",
+                item=self.create_text_output_item(text="".join(accumulated), id="msg_1"),
+            )
 
 
 # ---------------------------------------------------------------------------
