@@ -130,7 +130,7 @@ class NPSResponsesAgent(ResponsesAgent):
                     break
 
                 if kind == QMSG_ERROR:
-                    yield ResponsesAgentStreamEvent(**self.create_text_delta(f"Error: {value}", "msg_1"))
+                    yield ResponsesAgentStreamEvent(**{"type": "error", "message": f"Error: {value}"})
                     finished_without_error = False
                     break
 
