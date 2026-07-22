@@ -77,7 +77,7 @@ langchain-mcp-adapters==0.1.9
 langchain-openai==0.3.29
 langchain-text-splitters==0.3.9
 langsmith==0.8.18
-litellm==1.74.9.post1
+litellm==1.93.0
 llama_api_client==0.1.2
 llama_stack==0.4.4
 llama_stack_client==0.3.2
