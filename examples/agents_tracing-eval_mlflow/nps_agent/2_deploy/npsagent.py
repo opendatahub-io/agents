@@ -17,7 +17,7 @@ from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
 from mlflow.genai.agent_server import AgentServer, invoke, stream
 
 from openai import AsyncClient
-from agents import Agent, Runner, StreamEvent, set_default_openai_client
+from agents import Agent, Runner, StreamEvent
 from agents.mcp import MCPServerStdio
 from agents.models.openai_provider import OpenAIChatCompletionsModel
 

@@ -3,6 +3,7 @@ httpx
 starlette
 mcp
 python-dotenv
+openai<=2.44.0  # Breaking change to InputTokensDetails in 2.45 (https://github.com/openai/openai-python/commit/f16fbbd2bd25dc1ff150b5f78dbd15ff6bab6d91)
 openai-agents==0.9.0
 mlflow @ git+https://github.com/opendatahub-io/mlflow@master
 litellm
