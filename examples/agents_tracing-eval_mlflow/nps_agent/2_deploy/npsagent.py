@@ -109,7 +109,7 @@ async def handle_stream(request: ResponsesAgentRequest) -> AsyncGenerator[Respon
     accumulated: list[str] = []
     async for event in run_streaming_nps_agent(request.input):
 
-        if hasattr(event, "data") and hasattr(event.data, "delta"):
+        if event.type == "raw_response_event" and event.data.type == "response.output_text.delta":
             delta = event.data.delta
             accumulated.append(delta)
             yield ResponsesAgentStreamEvent(**create_text_delta(delta, "msg_1"))
