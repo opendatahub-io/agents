@@ -9,4 +9,3 @@ mlflow @ git+https://github.com/opendatahub-io/mlflow@master
 litellm
 uv
 uvicorn
-anyio>=4.0

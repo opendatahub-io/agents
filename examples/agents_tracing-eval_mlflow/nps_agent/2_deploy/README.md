@@ -2,14 +2,14 @@
 
 This directory contains everything needed to deploy the NPS Agent as an HTTP endpoint on **Red Hat OpenShift AI (RHOAI)** with MLflow tracing.
 
-The agent logic is identical to the [Evaluate notebook](../1_develop/2_evaluate.ipynb) — we just wrap it in an MLflow `ResponsesAgent` for serving.
+The agent logic is identical to the [Evaluate notebook](../1_develop/2_evaluate.ipynb) — we just wrap it in an MLflow `AgentServer` for serving.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | [`deploy.ipynb`](./deploy.ipynb) | Step-by-step deployment notebook |
-| [`npsagent.py`](./npsagent.py) | Agent + MLflow `ResponsesAgent` wrapper for HTTP serving |
+| [`npsagent.py`](./npsagent.py) | Agent + MLflow `AgentServer` wrapper for HTTP serving |
 | [`nps_mcp_server.py`](./nps_mcp_server.py) | FastMCP server exposing NPS API tools (spawned on-demand per request) |
 | [`app.sh`](./app.sh) | Container entry point — packages the agent and starts `mlflow models serve` |
 | [`requirements.txt`](./requirements.txt) | Python dependencies for the s2i build |
