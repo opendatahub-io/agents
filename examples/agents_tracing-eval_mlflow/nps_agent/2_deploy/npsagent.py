@@ -1,22 +1,26 @@
 import os
 import shutil
 import argparse
-
-import anyio
+from collections.abc import AsyncGenerator
 
 import uvicorn
 
 from dotenv import load_dotenv
 
 import mlflow
-from mlflow.models import set_model
-from mlflow.pyfunc import ResponsesAgent
-from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
-from mlflow.genai.agent_server import AgentServer, invoke
+from mlflow.genai.agent_server import AgentServer, invoke, stream
+from mlflow.types.responses import (
+    ResponsesAgentRequest,
+    ResponsesAgentResponse,
+    ResponsesAgentStreamEvent,
+    create_text_delta,
+    create_text_output_item,
+)
 
 from openai import AsyncClient
-from agents import Agent, Runner, set_default_openai_client
+from agents import Agent, Runner, StreamEvent
 from agents.mcp import MCPServerStdio
+from agents.models.openai_provider import OpenAIChatCompletionsModel
 
 
 # ---------------------------------------------------------------------------
@@ -50,54 +54,70 @@ async def run_nps_agent(prompt) -> str:
     """Run the NPS agent with MCP tools and return the text response."""
     async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
         # Configure OpenAI-compatible endpoint
-        async_client = AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
-        set_default_openai_client(client=async_client)
+        async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
 
-        # Create the agent
-        agent = Agent(
-            name=AGENT_NAME,
-            instructions=AGENT_INSTRUCTIONS,
-            mcp_servers=[mcp_server],
-            model=OPENAI_MODEL_NAME,
-        )
+            # Create the agent
+            agent = Agent(
+                name=AGENT_NAME,
+                instructions=AGENT_INSTRUCTIONS,
+                mcp_servers=[mcp_server],
+                model=OpenAIChatCompletionsModel(model=OPENAI_MODEL_NAME, openai_client=async_client)
+            )
 
-        # Run the agent
-        result = await Runner.run(agent, prompt)
-        return result.final_output
-
-
-# ---------------------------------------------------------------------------
-# MLflow ResponsesAgent — wraps run_nps_agent to provide tracing
-# ---------------------------------------------------------------------------
-class NPSResponsesAgent(ResponsesAgent):
-    def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-        try:
-            with anyio.from_thread.start_blocking_portal() as portal:
-                result = portal.call(run_nps_agent, request.input)
-        except Exception as e:
-            result = f"Error: {e}"
-        return ResponsesAgentResponse(
-            output=[self.create_text_output_item(text=result, id="msg_1")]
-        )
+            # Run the agent
+            result = await Runner.run(agent, prompt)
+            return result.final_output
 
 
-# ---------------------------------------------------------------------------
-# MLflow model registration
-# ---------------------------------------------------------------------------
-nps_responses_agent = NPSResponsesAgent()
-mlflow.openai.autolog()
-set_model(nps_responses_agent)
+async def run_streaming_nps_agent(prompt) -> AsyncGenerator[StreamEvent, None]:
+    """Run the NPS agent with MCP tools and stream the text response."""
+    async with MCPServerStdio(params=MCP_PARAMS) as mcp_server:
+        # Configure OpenAI-compatible endpoint
+        async with AsyncClient(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY) as async_client:
+
+            # Create the agent
+            agent = Agent(
+                name=AGENT_NAME,
+                instructions=AGENT_INSTRUCTIONS,
+                mcp_servers=[mcp_server],
+                model=OpenAIChatCompletionsModel(model=OPENAI_MODEL_NAME, openai_client=async_client)
+            )
+
+            # Run the agent with streaming
+            streaming_result = Runner.run_streamed(agent, prompt)
+            async for event in streaming_result.stream_events():
+                yield event
 
 
 # ---------------------------------------------------------------------------
 # MLflow AgentServer  (Provides HTTP API that supports SSE via FastAPI)
 # ---------------------------------------------------------------------------
+mlflow.openai.autolog()
 agent_server = AgentServer("ResponsesAgent")
 
 
 @invoke()
-def handle_invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-    return nps_responses_agent.predict(request)
+async def handle_invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
+
+    result = await run_nps_agent(request.input)
+    return ResponsesAgentResponse(output=[create_text_output_item(text=result, id="msg_1")])
+
+
+@stream()
+async def handle_stream(request: ResponsesAgentRequest) -> AsyncGenerator[ResponsesAgentStreamEvent, None]:
+
+    accumulated: list[str] = []
+    async for event in run_streaming_nps_agent(request.input):
+
+        if event.type == "raw_response_event" and event.data.type == "response.output_text.delta":
+            delta = event.data.delta
+            accumulated.append(delta)
+            yield ResponsesAgentStreamEvent(**create_text_delta(delta, "msg_1"))
+
+    yield ResponsesAgentStreamEvent(
+        type="response.output_item.done",
+        item=create_text_output_item(text="".join(accumulated), id="msg_1"),
+    )
 
 
 if __name__ == "__main__":
